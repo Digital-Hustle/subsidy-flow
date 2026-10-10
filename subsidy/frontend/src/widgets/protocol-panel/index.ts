@@ -1,1 +1,1 @@
-export { ProtocolPanel } from "./ui/ProtocolPanel";
+export { ProtocolPanel, type EvidenceJump } from "./ui/ProtocolPanel";

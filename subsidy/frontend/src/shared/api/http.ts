@@ -3,7 +3,7 @@ import { ApiError, networkError, toApiError } from "./problem";
 
 export type Service = "package" | "docproc" | "rules" | "assistant";
 
-/** Откуда брать заголовок Authorization: зона соискателя — ключ заявки, зона оператора — токен OIDC. */
+/** Откуда брать заголовок Authorization: кабинет заявителя — ключ заявки, рабочее место специалиста — сессия (cookie). */
 type AuthSource = () => Promise<string | null> | string | null;
 let authSource: AuthSource = () => null;
 let onUnauthorized: () => void = () => {};

@@ -1,1 +1,1 @@
-export { DocumentViewer } from "./ui/DocumentViewer";
+export { DocumentViewer, type Highlight } from "./ui/DocumentViewer";

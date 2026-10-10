@@ -1,31 +1,25 @@
 import { useRef } from "react";
-import { createBrowserRouter, Navigate, useLocation, useOutlet } from "react-router";
+import { Navigate, createBrowserRouter, useLocation, useOutlet, useParams } from "react-router";
 import { AnimatePresence, motion, useIsPresent } from "motion/react";
 import { Aurora } from "@/shared/ui";
 import { tween } from "@/shared/config/motion";
-import { routes } from "@/shared/const/router";
 import { HomePage } from "@/pages/home";
-import { SpecialistShell } from "@/widgets/specialist-shell";
+import { NotFoundPage } from "@/pages/not-found";
+import { ApplyShell } from "@/widgets/apply-shell";
+import { ErrorScreen } from "./ErrorScreen";
 
-// Каждая страница — отдельный чанк (recharts, просмотрщик и т. п. не грузятся на главной).
-// react-router дожидается чанка до смены экрана, поэтому переход без мигания пустого экрана.
-const packages = () => import("@/pages/packages");
-const pkg = () => import("@/pages/package");
-const expiring = () => import("@/pages/expiring");
-const stats = () => import("@/pages/stats");
-const programs = () => import("@/pages/programs");
-const org = () => import("@/pages/organization");
-const staff = () => import("@/pages/staff");
-const settings = () => import("@/pages/settings");
-const login = () => import("@/pages/login");
+// Зоны — отдельные чанки: кабинет заявителя на телефоне не тянет код специалиста.
+const apply = () => import("@/pages/apply");
+const operator = () => import("@/pages/operator");
+const operatorShell = () => import("@/widgets/operator-shell");
 
-/** Фоновая предзагрузка страниц после первого экрана: дальнейшие переходы мгновенные. */
-export const prefetchRoutes = () => {
-  const run = () => [packages, pkg, expiring, stats, programs, org, staff, settings].forEach((f) => { f().catch(() => {}); });
+/** Подгрузка чанков в простое: заявителю — только кабинет, сотруднику — его зону (переходы без спиннера). */
+export const prefetchRoutes = (pathname: string) => {
+  const list = pathname.startsWith("/operator") ? [operator, operatorShell] : [apply];
+  const run = () => list.forEach((f) => { f().catch(() => {}); });
   if ("requestIdleCallback" in window) requestIdleCallback(run); else setTimeout(run, 1);
 };
 
-/** Уходящий раздел дорисовывает свой последний экран, пока гаснет (иначе он мгновенно подменился бы новым). */
 const Frozen = () => {
   const outlet = useOutlet();
   const present = useIsPresent();
@@ -34,11 +28,7 @@ const Frozen = () => {
   return last.current;
 };
 
-/**
- * Общий корень: одно живое сияние на все разделы (не пересоздаётся при переходе — фон не мигает)
- * и мягкая смена раздела: главная ↔ рабочее место — затухание и проявление.
- * Внутри раздела страницы меняются своим pageIn (оболочка и шапка остаются на месте).
- */
+/** Общий корень как в «Проходной»: одно сияние на все зоны и мягкая смена зоны. */
 const RootLayout = () => {
   const { pathname } = useLocation();
   const section = pathname.split("/")[1] || "home";
@@ -54,29 +44,44 @@ const RootLayout = () => {
   );
 };
 
-// Зона специалиста /specialist (rules.md §4), главная — «/».
+/** Старые адреса зоны специалиста (/specialist/...) — из писем и закладок — ведут в новую зону /operator. */
+const LegacyPackage = () => <Navigate to={`/operator/applications/${useParams().id ?? ""}`} replace />;
+const SAME = new Set(["expiring", "programs", "staff"]);
+const LegacySection = () => { const s = useParams().section ?? ""; return <Navigate to={SAME.has(s) ? `/operator/${s}` : "/operator"} replace />; };
+const LegacyOrg = () => <Navigate to={`/operator/organizations/${useParams().inn ?? ""}`} replace />;
+
+// BrowserRouter: Caddy отдаёт index.html на любые пути (try_files), ключ заявки — во фрагменте #k=.
 export const router = createBrowserRouter([
   {
     element: <RootLayout />,
+    errorElement: <ErrorScreen />,
     children: [
-      { path: routes.home, element: <HomePage /> },
-      { path: routes.login, lazy: async () => ({ Component: (await login()).LoginPage }) },
+      { path: "/", element: <HomePage /> },
       {
-        path: routes.specialist,
-        element: <SpecialistShell />,
+        path: "/apply", element: <ApplyShell />,
         children: [
-          { index: true, element: <Navigate to={routes.packages} replace /> },
-          { path: "packages", lazy: async () => ({ Component: (await packages()).PackagesPage }) },
-          { path: "packages/:id", lazy: async () => ({ Component: (await pkg()).PackagePage }) },
-          { path: "expiring", lazy: async () => ({ Component: (await expiring()).ExpiringPage }) },
-          { path: "stats", lazy: async () => ({ Component: (await stats()).StatsPage }) },
-          { path: "programs", lazy: async () => ({ Component: (await programs()).ProgramsPage }) },
-          { path: "organizations/:inn", lazy: async () => ({ Component: (await org()).OrganizationPage }) },
-          { path: "staff", lazy: async () => ({ Component: (await staff()).StaffPage }) },
-          { path: "settings", lazy: async () => ({ Component: (await settings()).SettingsPage }) },
+          { index: true, lazy: async () => ({ Component: (await apply()).ApplyStartPage }) },
+          { path: ":id", lazy: async () => ({ Component: (await apply()).ApplyApplicationPage }) },
         ],
       },
+      {
+        path: "/operator", lazy: async () => ({ Component: (await operatorShell()).OperatorShell }),
+        children: [
+          { index: true, lazy: async () => ({ Component: (await operator()).QueuePage }) },
+          { path: "applications/:id", lazy: async () => ({ Component: (await operator()).ApplicationPage }) },
+          { path: "expiring", lazy: async () => ({ Component: (await operator()).ExpiringPage }) },
+          { path: "metrics", lazy: async () => ({ Component: (await operator()).MetricsPage }) },
+          { path: "organizations/:inn", lazy: async () => ({ Component: (await operator()).OrganizationPage }) },
+          { path: "programs", lazy: async () => ({ Component: (await operator()).ProgramsPage }) },
+          { path: "staff", lazy: async () => ({ Component: (await operator()).StaffPage }) },
+        ],
+      },
+      { path: "/specialist/packages/:id", element: <LegacyPackage /> },
+      { path: "/specialist/organizations/:inn", element: <LegacyOrg /> },
+      { path: "/specialist/stats", element: <Navigate to="/operator/metrics" replace /> },
+      { path: "/specialist/:section", element: <LegacySection /> },
+      { path: "/specialist", element: <Navigate to="/operator" replace /> },
+      { path: "*", element: <NotFoundPage /> },
     ],
   },
-  { path: "*", element: <Navigate to={routes.home} replace /> },
 ]);

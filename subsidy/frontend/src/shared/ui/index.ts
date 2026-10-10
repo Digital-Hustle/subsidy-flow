@@ -29,4 +29,5 @@ export { CodeInput, type CodeState } from "./CodeInput";
 export { Chip } from "./Chip";
 export * from "./DrawnCheck";
 export * from "./AutoHeight";
+export * from "./StyledQr";
 export * from "./Textarea";
