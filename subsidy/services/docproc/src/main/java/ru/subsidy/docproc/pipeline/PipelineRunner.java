@@ -194,22 +194,22 @@ public class PipelineRunner {
         metrics.documentParsed(type.code(), confidence, manual ? SPECIALIST : PipelineStore.MODEL, reason);
     }
 
-    /** Визуальная подпись/печать — только для видов с подписантом и файлов, которые можно отрисовать (PDF, сканы). */
+    // визуальная подпись/печать — только для видов с подписантом и файлов, которые можно отрисовать (PDF, сканы)
     private DocumentMarks marks(Job job, FileBytes content, String documentId, DocType type, Segment seg) {
-        if (!MarkDetector.applies(type.code())) {
-            return null;
+        DocumentMarks result = null;
+        if (MarkDetector.applies(type.code())) {
+            result = MarkParser.undetermined();
+            if (props.visualMarks() && TextExtractor.renderable(job.mime())) {
+                int from = Math.max(seg.fromPage(), seg.toPage() - MarkDetector.LAST_PAGES + 1);
+                try {
+                    List<byte[]> images = texts.images(content.get(), job.mime(), from, seg.toPage());
+                    result = metrics.time("marks", () -> marks.detect(documentId, type, images));
+                } catch (UncheckedIOException broken) {
+                    LOG.info("marks undetermined doc={}: страницы не отрисованы", documentId);
+                }
+            }
         }
-        if (!props.visualMarks() || !TextExtractor.renderable(job.mime())) {
-            return MarkParser.undetermined();
-        }
-        int from = Math.max(seg.fromPage(), seg.toPage() - MarkDetector.LAST_PAGES + 1);
-        try {
-            List<byte[]> images = texts.images(content.get(), job.mime(), from, seg.toPage());
-            return metrics.time("marks", () -> marks.detect(documentId, type, images));
-        } catch (UncheckedIOException broken) {
-            LOG.info("marks undetermined doc={}: страницы не отрисованы", documentId);
-            return MarkParser.undetermined();
-        }
+        return result;
     }
 
     private static List<PageQuality> pageQuality(List<PageText> pages, Segment seg) {

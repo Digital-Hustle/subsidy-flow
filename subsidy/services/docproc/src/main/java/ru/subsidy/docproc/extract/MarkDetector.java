@@ -41,6 +41,7 @@ public class MarkDetector {
     private static final String BASIS = "basis";
     private static final String SIGNATURE = "signature";
     private static final String STAMP = "stamp";
+    private static final String STRING = "string";
 
     private final LlmGateway llm;
     private final ObjectMapper json;
@@ -101,10 +102,10 @@ public class MarkDetector {
     private JsonNode mark(String label) {
         ObjectNode mark = json.createObjectNode().put(TYPE, OBJECT).put("description", label);
         ObjectNode props = mark.putObject(PROPERTIES);
-        props.putObject(STATUS).put(TYPE, "string").putArray("enum")
+        props.putObject(STATUS).put(TYPE, STRING).putArray("enum")
                 .add(MarkState.DETECTED).add(MarkState.NOT_DETECTED).add(MarkState.UNDETERMINED);
         props.putObject(CONFIDENCE).put(TYPE, "number").put("minimum", 0).put("maximum", 1);
-        props.putObject(BASIS).put(TYPE, "string");
+        props.putObject(BASIS).put(TYPE, STRING);
         mark.putArray(REQUIRED).add(STATUS);
         return mark;
     }

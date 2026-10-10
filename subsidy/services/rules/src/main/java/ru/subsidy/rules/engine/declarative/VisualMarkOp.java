@@ -22,6 +22,8 @@ public final class VisualMarkOp implements DeclarativeOp {
     private static final String DETECTED = "DETECTED";
     private static final String NOT_DETECTED = "NOT_DETECTED";
     private static final String PRESENT = "PRESENT";
+    private static final String COLON = ": ";
+    private static final String DOT = ". ";
 
     @Override
     public String name() {
@@ -57,37 +59,38 @@ public final class VisualMarkOp implements DeclarativeOp {
         }
         String field = Params.text(spec, Params.FIELD);
         boolean electronic = spec.params().path(ACCEPT_ELECTRONIC).asBoolean(false);
-        List<String> absent = new ArrayList<>();
-        List<String> unknown = new ArrayList<>();
-        List<String> found = new ArrayList<>();
-        List<Evidence> evidence = new ArrayList<>();
-        for (DocFacts doc : docs) {
-            String title = Docs.title(doc.type());
-            String value = doc.text(field).orElse("");
-            if (electronic && hasElectronicSignature(scope, doc)) {
-                found.add(title + " — ЭП в PDF");
-            } else if (DETECTED.equals(value)) {
-                found.add(title + " — видна" + confidence(doc, field));
-            } else if (NOT_DETECTED.equals(value)) {
-                absent.add(title + confidence(doc, field));
-                evidence.add(Evidence.of(doc, field));
-            } else {
-                unknown.add(title);
-                evidence.add(Evidence.of(doc, field));
-            }
-        }
+        Found sorted = new Found(new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new ArrayList<>());
+        docs.forEach(doc -> sort(scope, doc, field, electronic, sorted));
+        List<String> found = sorted.found();
+        List<String> absent = sorted.absent();
+        List<String> unknown = sorted.unknown();
+        List<Evidence> evidence = sorted.evidence();
         String label = Docs.field(field);
         String actual = summary(found, absent, unknown);
         String status = !absent.isEmpty() ? spec.severity()
                 : !unknown.isEmpty() ? RuleStatus.WARNING : RuleStatus.PASSED;
         String message = !absent.isEmpty()
-                ? "Не обнаружена " + label + ": " + String.join(Texts.SEMI, absent) + ". " + actual
+                ? "Не обнаружена " + label + COLON + String.join(Texts.SEMI, absent) + DOT + actual
                 : !unknown.isEmpty()
-                ? "Не удалось определить " + label + ": " + String.join(Texts.SEMI, unknown)
+                ? "Не удалось определить " + label + COLON + String.join(Texts.SEMI, unknown)
                         + " (нет изображения страницы, нечитаемо или DOCX/XLSX) — проверьте оригинал"
                         + " и подтвердите поле вручную"
-                : label + ": " + String.join(Texts.SEMI, found);
+                : label + COLON + String.join(Texts.SEMI, found);
         return new RuleResult(spec.code(), status, message, evidence, DETECTED, actual);
+    }
+
+    private static void sort(Scope scope, DocFacts doc, String field, boolean electronic, Found sorted) {
+        String title = Docs.title(doc.type());
+        String value = doc.text(field).orElse("");
+        if (electronic && hasElectronicSignature(scope, doc)) {
+            sorted.found().add(title + " — ЭП в PDF");
+        } else if (DETECTED.equals(value)) {
+            sorted.found().add(title + " — видна" + confidence(doc, field));
+        } else {
+            (NOT_DETECTED.equals(value) ? sorted.absent() : sorted.unknown()).add(title
+                    + (NOT_DETECTED.equals(value) ? confidence(doc, field) : ""));
+            sorted.evidence().add(Evidence.of(doc, field));
+        }
     }
 
     private static boolean hasElectronicSignature(Scope scope, DocFacts doc) {
@@ -103,14 +106,17 @@ public final class VisualMarkOp implements DeclarativeOp {
     private static String summary(List<String> found, List<String> absent, List<String> unknown) {
         List<String> parts = new ArrayList<>();
         if (!found.isEmpty()) {
-            parts.add("есть: " + String.join(Texts.SEMI, found));
+            parts.add("есть" + COLON + String.join(Texts.SEMI, found));
         }
         if (!absent.isEmpty()) {
-            parts.add("нет: " + String.join(Texts.SEMI, absent));
+            parts.add("нет" + COLON + String.join(Texts.SEMI, absent));
         }
         if (!unknown.isEmpty()) {
-            parts.add("не определено: " + String.join(Texts.SEMI, unknown));
+            parts.add("не определено" + COLON + String.join(Texts.SEMI, unknown));
         }
-        return String.join(". ", parts);
+        return String.join(DOT, parts);
+    }
+
+    private record Found(List<String> found, List<String> absent, List<String> unknown, List<Evidence> evidence) {
     }
 }

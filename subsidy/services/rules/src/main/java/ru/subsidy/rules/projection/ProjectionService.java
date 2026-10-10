@@ -313,10 +313,8 @@ public class ProjectionService {
                 .execute();
     }
 
-    /**
-     * Поля документа + визуальные признаки docproc (B2-2) как поля visualSignature/visualStamp: правило VISUAL_MARK
-     * читает их как обычные поля, специалист может подтвердить значение правкой поля.
-     */
+    // поля документа + визуальные признаки docproc (B2-2) как поля visualSignature/visualStamp: правило VISUAL_MARK
+    // читает их как обычные поля, специалист может подтвердить значение правкой поля
     private ArrayNode withMarks(JsonNode payload) {
         ArrayNode fields = payload.path(K_FIELDS).isArray() ? ((ArrayNode) payload.path(K_FIELDS)).deepCopy()
                 : JsonNodeFactory.instance.arrayNode();
