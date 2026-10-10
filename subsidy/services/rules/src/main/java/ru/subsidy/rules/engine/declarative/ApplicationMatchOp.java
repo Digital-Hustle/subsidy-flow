@@ -26,12 +26,13 @@ public final class ApplicationMatchOp implements DeclarativeOp {
     private static final String SPACE = " ";
     private static final String WHITESPACE = "\\s+";
     private static final int ARRAY_SUFFIX_LENGTH = 3;
+    private static final String JSC = "ао";
     private static final String[][] LEGAL_FORMS = {
         {"общество с ограниченной ответственностью", "ооо"},
-        {"непубличное акционерное общество", "ао"},
+        {"непубличное акционерное общество", JSC},
         {"публичное акционерное общество", "пао"},
-        {"акционерное общество", "ао"},
-        {"индивидуальный предприниматель", "ип"},
+        {"акционерное общество", JSC},
+        {"индивидуальный предприниматель", "ип"}
     };
 
     @Override
@@ -73,11 +74,10 @@ public final class ApplicationMatchOp implements DeclarativeOp {
 
     @Override
     public RuleResult apply(RuleSpec spec, Scope scope) {
-        if (scope.facts().application() == null || scope.facts().application().isNull()) {
-            return spec.notApplicable("Анкета заявки не заполнена — сверка с ней не выполняется");
-        }
-        if (!condition(spec, scope)) {
-            return spec.notApplicable("Условие сверки не выполнено для этой заявки");
+        boolean noApplication = scope.facts().application() == null || scope.facts().application().isNull();
+        if (noApplication || !condition(spec, scope)) {
+            return spec.notApplicable(noApplication ? "Анкета заявки не заполнена — сверка с ней не выполняется"
+                    : "Условие сверки не выполнено для этой заявки");
         }
         String expected = application(scope, Params.text(spec, PATH));
         JsonNode fields = spec.params().path(Params.FIELDS);
@@ -154,7 +154,12 @@ public final class ApplicationMatchOp implements DeclarativeOp {
                 : text.replaceAll("[^\\p{L}\\p{N}]+", SPACE).strip().replaceAll(WHITESPACE, SPACE);
     }
 
-    /** Полная и краткая форма ОПФ считаются одинаковыми: «Общество с ограниченной ответственностью» = «ООО». */
+    /**
+     * Полная и краткая форма ОПФ считаются одинаковыми: «Общество с ограниченной ответственностью» = «ООО».
+     *
+     * @param text нормализуемый текст в нижнем регистре
+     * @return текст с краткими формами ОПФ
+     */
     private static String legalForm(String text) {
         String out = text;
         for (String[] form : LEGAL_FORMS) {

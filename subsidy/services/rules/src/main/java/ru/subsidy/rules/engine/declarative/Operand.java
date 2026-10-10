@@ -107,12 +107,6 @@ record Operand(String text, Ref left, int sign, Ref right) {
     }
 
     /**
-     * Ссылка на поле первого документа вида.
-     *
-     * @param type вид
-     * @param field поле
-     */
-    /**
      * Ссылается ли выражение на сохранённую анкету (APPLICANT.поле).
      *
      * @return true, если есть ссылка на анкету
@@ -121,6 +115,12 @@ record Operand(String text, Ref left, int sign, Ref right) {
         return APPLICANT.equals(left.type()) || right != null && APPLICANT.equals(right.type());
     }
 
+    /**
+     * Ссылка на поле первого документа вида.
+     *
+     * @param type вид
+     * @param field поле
+     */
     record Ref(String type, String field) {
 
         /**
