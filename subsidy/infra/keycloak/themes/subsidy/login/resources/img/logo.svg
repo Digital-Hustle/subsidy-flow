@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <clipPath id="s"><path d="M32 0C55 0 64 9 64 32S55 64 32 64 0 55 0 32 9 0 32 0Z"/></clipPath>
+    <filter id="b" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="7"/></filter>
+    <radialGradient id="h" cx=".25" cy=".1" r=".75"><stop offset="0" stop-color="#fff" stop-opacity=".55"/><stop offset=".6" stop-color="#fff" stop-opacity="0"/></radialGradient>
+  </defs>
+  <g clip-path="url(#s)">
+    <rect width="64" height="64" fill="#21A038"/>
+    <g filter="url(#b)">
+      <circle cx="6" cy="8" r="20" fill="#FAED00"/>
+      <circle cx="20" cy="20" r="18" fill="#A0E720"/>
+      <circle cx="58" cy="10" r="18" fill="#42E3B4"/>
+      <circle cx="62" cy="50" r="22" fill="#0087CD"/>
+      <circle cx="40" cy="62" r="16" fill="#00ADEE"/>
+      <circle cx="30" cy="38" r="14" fill="#21A038"/>
+    </g>
+    <rect width="64" height="64" fill="url(#h)"/>
+  </g>
+  <path d="M19 33.5l8.5 8.5L45.5 23" fill="none" stroke="#fff" stroke-width="6.5" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

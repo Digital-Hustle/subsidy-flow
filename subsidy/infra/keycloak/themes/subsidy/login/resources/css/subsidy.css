@@ -1,0 +1,113 @@
+@import url("https://cdn-app.sberdevices.ru/shared-static/0.0.0/styles/SBSansText.0.2.0.css");
+@import url("https://cdn-app.sberdevices.ru/shared-static/0.0.0/styles/SBSansDisplay.0.2.0.css");
+/* FE-UI-01: вход Keycloak в том же виде, что /specialist фронта: шапка с логотипом, надзаголовок, крупный заголовок,
+   карточка с формой, бренд-кнопка. Цвета — frontend/src/shared/config/tokens.ts (светлая/тёмная по системной теме). */
+:root {
+  --d-page: radial-gradient(60% 45% at 15% 10%, rgb(100 238 97 / 0.35), transparent 70%),
+            radial-gradient(55% 45% at 85% 5%, rgb(50 184 211 / 0.35), transparent 70%),
+            linear-gradient(160deg, #BBF2D5 0%, #D4F7E0 45%, #EEF7FB 100%);
+  --d-fg: #172419; --d-muted: #5C665E; --d-subtle: #8A948C;
+  --d-card: rgb(255 255 255 / 0.85); --d-bar: rgb(255 255 255 / 0.9);
+  --d-border: #D6F2E1; --d-input: #A9DDC0; --d-field: #FFFFFF; --d-brand: #21A038;
+  --d-btn: linear-gradient(120deg, #0B7323 0%, #21A038 45%, #14A3A8 100%);
+  --d-danger: #B42318; --d-danger-soft: #FDECEA; --d-ok-soft: #E2F5E9; --d-warn-soft: #FFF4D6;
+  --d-shadow: 0 1px 2px rgb(8 92 24 / 0.04), 0 12px 30px -14px rgb(8 92 24 / 0.16);
+  --d-ring: 0 0 0 3px rgb(33 160 56 / 0.22);
+  --d-font: "SB Sans Text", "SBSansText", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  --d-display: "SB Sans Display", "SBSansDisplay", "SB Sans Text", system-ui, sans-serif;
+}
+/* тёмная — класс d-dark ставит js/embed.js (выбор фронта или система) */
+:root.d-dark {
+  --d-page: radial-gradient(120% 60% at 50% 0%, rgb(33 160 56 / 0.18) 0%, rgb(20 163 168 / 0.08) 40%, transparent 75%), linear-gradient(#121417, #121417);
+  --d-fg: #EDF1EF; --d-muted: #98A19D; --d-subtle: #6B736F;
+  --d-card: rgb(26 29 33 / 0.85); --d-bar: rgb(26 29 33 / 0.9);
+  --d-border: #292D33; --d-input: #33383F; --d-field: #212429; --d-brand: #3FC86A;
+  --d-danger: #FF8A80; --d-danger-soft: #3A1715; --d-ok-soft: #103A1F; --d-warn-soft: #3A2E10;
+  --d-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.05);
+  --d-ring: 0 0 0 3px rgb(63 200 106 / 0.25);
+}
+
+html, body, .login-pf body { background: var(--d-page) fixed !important; color: var(--d-fg); font-family: var(--d-font); min-height: 100vh; -webkit-font-smoothing: antialiased; }
+.login-pf-page { padding: 112px 16px 64px; max-width: 448px; margin: 0 auto; }
+
+/* Шапка как HeaderBar фронта */
+#kc-header { position: fixed; z-index: 10; top: 12px; left: 50%; transform: translateX(-50%); width: calc(100% - 32px); max-width: 1152px; margin: 0 !important; padding: 0; }
+#kc-header-wrapper {
+  display: flex; align-items: center; height: 60px; padding: 0 14px !important; border-radius: 26px; background: var(--d-bar);
+  backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); box-shadow: var(--d-shadow);
+  font-size: 0 !important; letter-spacing: 0; text-transform: none; color: var(--d-fg); white-space: normal; text-align: left;
+}
+#kc-header-wrapper::before { content: ""; flex: none; width: 36px; height: 36px; margin-right: 10px; background: url(../img/logo.svg) center / contain no-repeat; }
+#kc-header-wrapper::after { content: "Субсидии\A специалист"; white-space: pre; font-family: var(--d-display); font-size: 17px; font-weight: 600; line-height: 1.15; }
+
+/* Заголовок вне карточки, как на фронте */
+.login-pf-page .card-pf { background: transparent; border: 0; box-shadow: none; padding: 0; max-width: none; margin: 0; color: var(--d-fg); }
+.login-pf-page .login-pf-header { margin: 0 0 24px; padding: 0; text-align: center; }
+.login-pf-page .login-pf-header::before { content: "Специалисты, старшие и аудиторы"; display: block; color: var(--d-brand); font-size: 14px; font-weight: 500; margin-bottom: 20px; }
+#kc-page-title { font-family: var(--d-display); font-size: 48px; font-weight: 600; letter-spacing: -0.035em; line-height: 1; text-wrap: balance; color: var(--d-fg); margin: 0; }
+#kc-page-title::after { text-wrap: pretty; content: "Единая корпоративная учётная запись. Права проверяет сервер"; display: block; margin-top: 12px; font-family: var(--d-font); font-size: 16px; font-weight: 400; letter-spacing: 0; line-height: 1.45; color: var(--d-muted); }
+#kc-content { padding: 32px; border-radius: 28px; background: var(--d-card); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); box-shadow: var(--d-shadow); }
+#kc-content-wrapper { margin: 0; }
+
+/* Поля */
+.pf-c-form__group, .form-group { margin-bottom: 18px; }
+label, .pf-c-form__label, .pf-c-form__label-text, .control-label { color: var(--d-fg) !important; font-size: 14px; font-weight: 500; margin-bottom: 6px; }
+.pf-c-input-group { gap: 8px; background: transparent !important; }
+.pf-c-form-control, input[type="text"], input[type="password"], input[type="email"], input.form-control {
+  height: 52px !important; border-radius: 14px !important; border: 1px solid var(--d-input) !important; background: var(--d-field) !important;
+  color: var(--d-fg) !important; font-size: 16px !important; padding: 0 16px !important; box-shadow: none !important; transition: border-color .15s, box-shadow .15s;
+}
+.pf-c-form-control::before, .pf-c-form-control::after { display: none !important; }
+.pf-c-form-control:hover { border-color: var(--d-brand) !important; }
+.pf-c-form-control:focus, input.form-control:focus { border-color: var(--d-brand) !important; box-shadow: var(--d-ring) !important; outline: none; }
+.pf-c-form-control[aria-invalid="true"] { border-color: var(--d-danger) !important; }
+.pf-c-input-group .pf-c-button.pf-m-control { width: 52px; height: 52px; border-radius: 14px; border: 1px solid var(--d-input); background: var(--d-field); color: var(--d-muted); }
+.pf-c-input-group .pf-c-button.pf-m-control::after { display: none; }
+.pf-c-input-group .pf-c-button.pf-m-control:hover { color: var(--d-fg); border-color: var(--d-brand); }
+#input-error, .pf-c-form__helper-text.pf-m-error, .kc-feedback-text { color: var(--d-danger) !important; font-size: 13px; }
+
+/* Кнопка как brand h-14 фронта */
+#kc-form-buttons { margin-top: 24px; }
+.pf-c-button.pf-m-primary, #kc-login, input[type="submit"].btn-primary {
+  width: 100%; height: 56px; border-radius: 18px !important; border: 0 !important; font-size: 16px; font-weight: 600; color: #fff !important;
+  background: var(--d-btn) !important; box-shadow: 0 10px 24px -12px rgb(11 115 35 / 0.7); transition: transform .15s, box-shadow .15s, filter .15s;
+}
+.pf-c-button.pf-m-primary:hover, #kc-login:hover { filter: brightness(1.06); transform: translateY(-1px); box-shadow: 0 14px 28px -12px rgb(11 115 35 / 0.75); }
+.pf-c-button.pf-m-primary:active, #kc-login:active { transform: scale(0.98); }
+.pf-c-button.pf-m-primary::after { display: none; }
+a, .pf-c-button.pf-m-link { color: var(--d-brand); }
+
+/* Сообщения */
+.pf-c-alert, .alert { margin-bottom: 18px; border-radius: 14px; border: 0 !important; background: var(--d-danger-soft) !important; color: var(--d-danger) !important; box-shadow: none; }
+.pf-c-alert.pf-m-success, .alert-success, .pf-c-alert.pf-m-info { background: var(--d-ok-soft) !important; color: var(--d-brand) !important; }
+.pf-c-alert.pf-m-warning, .alert-warning { background: var(--d-warn-soft) !important; color: var(--d-fg) !important; }
+.pf-c-alert::before { display: none; }
+.pf-c-alert__title { color: inherit !important; font-weight: 500; }
+
+input[type="checkbox"] { accent-color: var(--d-brand); width: 16px; height: 16px; margin-right: 6px; vertical-align: -3px; }
+.checkbox label, #kc-form-options label { font-weight: 400; color: var(--d-muted) !important; }
+
+/* Прочее (TOTP, выбор локали, ссылки) */
+#kc-locale { display: none; }
+#kc-info, .login-pf-signup { background: transparent; border: 0; color: var(--d-muted); margin-top: 16px; }
+.login-pf-page .card-pf p, #kc-totp-settings, .instruction, #kc-totp-settings li { color: var(--d-muted); }
+#kc-totp-secret-qr-code { border-radius: 14px; background: #fff; padding: 8px; }
+#kc-attempted-username { color: var(--d-fg); font-weight: 500; }
+#reset-login, .kc-login-tooltip { color: var(--d-brand); }
+
+@media (max-width: 639px) {
+  .login-pf-page { padding-top: 96px; }
+  #kc-header { top: 8px; width: calc(100% - 24px); }
+  #kc-page-title { font-size: 36px; }
+  #kc-content { padding: 20px; border-radius: 26px; }
+}
+
+/* FE-UI-02: встроенный вид — форма во фрейме карточки фронта: без шапки, фона, заголовков и своей карточки */
+.d-embed, .d-embed body, .d-embed .login-pf body { background: transparent !important; min-height: 0; }
+.d-embed .login-pf-page { padding: 0; max-width: none; }
+.d-embed #kc-header, .d-embed .login-pf-header::before, .d-embed #kc-page-title::after { display: none; }
+.d-embed .login-pf-page .login-pf-header { margin-bottom: 16px; text-align: left; }
+.d-embed #kc-page-title { font-size: 20px; letter-spacing: -0.01em; line-height: 1.2; }
+.d-embed .login-pf-page:has(#kc-form-login, #kc-otp-login-form) #kc-page-title { display: none; }
+.d-embed #kc-content { padding: 0; border-radius: 0; background: transparent; box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none; }
+.d-embed #kc-info { margin-top: 12px; }

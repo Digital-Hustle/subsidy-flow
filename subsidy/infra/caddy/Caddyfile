@@ -1,0 +1,45 @@
+# Единая точка входа: фронт, Keycloak под /auth, API через gateway.
+{
+	admin 127.0.0.1:2019
+	# Сам на 80/443 — сертификат внутреннего CA; за общим edge (CADDY_SCHEME=http://) TLS делает edge.
+	local_certs
+	servers {
+		trusted_proxies static private_ranges
+	}
+}
+
+{$CADDY_SCHEME}{$PUBLIC_HOST} {
+	encode zstd gzip
+
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options nosniff
+		Referrer-Policy no-referrer
+		X-Frame-Options SAMEORIGIN
+		-Server
+	}
+
+	# Внутренние эндпоинты снаружи закрыты (rules.md §2)
+	# respond вне handle выполняется после handle (порядок директив Caddy) — SPA отдала бы 200, поэтому handle.
+	@internal path /internal/* /*/internal/* /ocr/*
+	handle @internal {
+		respond 404
+	}
+
+	@api path /package/* /docproc/* /rules/* /assistant/* /actuator/health
+	handle @api {
+		reverse_proxy gateway:8080 {
+			flush_interval -1
+		}
+	}
+
+	handle /auth/* {
+		reverse_proxy keycloak:8080
+	}
+
+	handle {
+		root * /srv
+		try_files {path} /index.html
+		file_server
+	}
+}

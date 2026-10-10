@@ -1,0 +1,344 @@
+# Стенд «Субсидии» (docs/DEPLOY.md). Запуск: ../scripts/gen-env.sh && docker compose up -d --wait
+# Локальная модель: docker compose --profile llm-local up -d
+# Программы кейса создаются миграцией rules всегда; демо-данные — LIQUIBASE_CONTEXTS=prod,demo в .env.
+name: subsidy
+
+x-restart: &restart
+  restart: unless-stopped
+
+services:
+  postgres:
+    <<: *restart
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_SUPERUSER_PASSWORD:?}
+      PACKAGE_DB_PASSWORD: ${PACKAGE_DB_PASSWORD:?}
+      DOCPROC_DB_PASSWORD: ${DOCPROC_DB_PASSWORD:?}
+      RULES_DB_PASSWORD: ${RULES_DB_PASSWORD:?}
+      ASSISTANT_DB_PASSWORD: ${ASSISTANT_DB_PASSWORD:?}
+      KC_DB_PASSWORD: ${KC_DB_PASSWORD:?}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./postgres/init.sh:/docker-entrypoint-initdb.d/10-init.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      retries: 20
+
+  kafka:
+    <<: *restart
+    image: apache/kafka:3.9.1
+    environment:
+      KAFKA_NODE_ID: 1
+      CLUSTER_ID: ${KAFKA_CLUSTER_ID:?}
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
+    volumes:
+      - kafkadata:/var/lib/kafka/data
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list >/dev/null"]
+      interval: 10s
+      retries: 20
+
+  kafka-topics:
+    image: apache/kafka:3.9.1
+    depends_on:
+      kafka: { condition: service_healthy }
+    entrypoint: ["/bin/sh", "/topics.sh"]
+    volumes:
+      - ./kafka/topics.sh:/topics.sh:ro
+    restart: "no"
+
+  keycloak:
+    <<: *restart
+    image: quay.io/keycloak/keycloak:26.4
+    command: ["start", "--import-realm"]
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: ${KC_DB_PASSWORD:?}
+      KC_HOSTNAME: "https://${KC_HOSTNAME:?}/auth"
+      KC_HTTP_RELATIVE_PATH: /auth
+      KC_HTTP_ENABLED: "true"
+      KC_PROXY_HEADERS: xforwarded
+      KC_HEALTH_ENABLED: "true"
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KC_BOOTSTRAP_ADMIN_USERNAME:?}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KC_BOOTSTRAP_ADMIN_PASSWORD:?}
+      KC_SVC_PACKAGE_SECRET: ${KC_SVC_PACKAGE_SECRET:?}
+      KC_SVC_DOCPROC_SECRET: ${KC_SVC_DOCPROC_SECRET:?}
+      KC_SVC_RULES_SECRET: ${KC_SVC_RULES_SECRET:?}
+      KC_SVC_ASSISTANT_SECRET: ${KC_SVC_ASSISTANT_SECRET:?}
+      KC_DEMO_SPECIALIST_PASSWORD: ${KC_DEMO_SPECIALIST_PASSWORD:?}
+      KC_DEMO_SENIOR_PASSWORD: ${KC_DEMO_SENIOR_PASSWORD:?}
+      KC_DEMO_AUDITOR_PASSWORD: ${KC_DEMO_AUDITOR_PASSWORD:?}
+      PUBLIC_HOST: ${PUBLIC_HOST:?}
+    volumes:
+      - ./keycloak/subsidy-realm.json:/opt/keycloak/data/import/subsidy-realm.json:ro
+      - ./keycloak/themes/subsidy:/opt/keycloak/themes/subsidy:ro
+    depends_on:
+      postgres: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/9000 && printf 'GET /auth/health/ready HTTP/1.0\\r\\n\\r\\n' >&3 && grep -q UP <&3"]
+      interval: 10s
+      retries: 30
+
+  jaeger:
+    <<: *restart
+    image: jaegertracing/all-in-one:1.62.0
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"
+
+  ollama:
+    <<: *restart
+    profiles: [llm-local]
+    image: ollama/ollama:0.12.6
+    volumes:
+      - ollama:/root/.ollama
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 10s
+      retries: 30
+
+  ollama-pull:
+    profiles: [llm-local]
+    image: ollama/ollama:0.12.6
+    depends_on:
+      ollama: { condition: service_healthy }
+    environment:
+      OLLAMA_HOST: http://ollama:11434
+    entrypoint: ["/bin/sh", "-c", "ollama pull ${LLM_MODEL:-qwen3:8b} && ollama pull ${LLM_VISION_MODEL:-qwen2.5vl:7b}"]
+    restart: "no"
+
+  package:
+    <<: *restart
+    build:
+      context: ../services
+      dockerfile: Dockerfile.src
+      args:
+        SERVICE: package
+    environment:
+      DB_HOST: postgres
+      PACKAGE_DB_PASSWORD: ${PACKAGE_DB_PASSWORD:?}
+      LIQUIBASE_CONTEXTS: ${LIQUIBASE_CONTEXTS:-prod}
+      KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS:?}
+      OIDC_ISSUER_URI: ${OIDC_ISSUER_URI:?}
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: http://keycloak:8080/auth/realms/subsidy/protocol/openid-connect/certs
+      FILES_ENCRYPTION_KEY: ${FILES_ENCRYPTION_KEY:?}
+      UPLOAD_MAX_MB: ${UPLOAD_MAX_MB:-30}
+      UPLOAD_MAX_PAGES: ${UPLOAD_MAX_PAGES:-60}
+      UPLOAD_MAX_FILES: ${UPLOAD_MAX_FILES:-60}
+      ZIP_MAX_UNPACKED_MB: ${ZIP_MAX_UNPACKED_MB:-300}
+      ZIP_MAX_ENTRIES: ${ZIP_MAX_ENTRIES:-100}
+      OTLP_ENDPOINT: ${OTLP_ENDPOINT:?}
+      # вход сотрудников по коду из письма (docs/DECISIONS.md ADR-023)
+      STAND_MODE: ${STAND_MODE:-prod}
+      STAFF_TOKEN_ISSUER: ${STAFF_TOKEN_ISSUER:-https://${PUBLIC_HOST}/package}
+      STAFF_JWKS_URI: http://package:8081/internal/staff/jwks
+      STAFF_TOKEN_SIGNING_KEY: ${STAFF_TOKEN_SIGNING_KEY:?}
+      STAFF_CODE_PEPPER: ${STAFF_CODE_PEPPER:?}
+      STAFF_BOOTSTRAP_EMAIL: ${STAFF_BOOTSTRAP_EMAIL:-}
+      STAFF_CODE_MINUTES: ${STAFF_CODE_MINUTES:-10}
+      STAFF_RESEND_SECONDS: ${STAFF_RESEND_SECONDS:-60}
+      STAFF_SESSION_HOURS: ${STAFF_SESSION_HOURS:-12}
+      STAFF_ACCESS_MINUTES: ${STAFF_ACCESS_MINUTES:-5}
+      STAFF_LOGIN_URL: ${STAFF_LOGIN_URL:-https://${PUBLIC_HOST}/specialist}
+      STAFF_LOG_CODES: ${STAFF_LOG_CODES:-false}
+    # Почта (MAIL_FROM, SMTP_*) — только из общего файла ящика: значения в environment
+    # перебивают env_file, поэтому здесь их нет. Корневой MAIL.md; файла может не быть.
+    env_file:
+      - path: ${MAIL_ENV_FILE:-./mail.env}
+        required: false
+    depends_on:
+      postgres: { condition: service_healthy }
+      kafka-topics: { condition: service_completed_successfully }
+    healthcheck:
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/8081 && printf 'GET /actuator/health HTTP/1.0\\r\\n\\r\\n' >&3 && grep -q UP <&3"]
+      interval: 10s
+      retries: 30
+
+  ocr:
+    <<: *restart
+    build:
+      context: ../services/ocr
+    environment:
+      OIDC_ISSUER_URI: ${OIDC_ISSUER_URI:?}
+      OIDC_JWK_SET_URI: http://keycloak:8080/auth/realms/subsidy/protocol/openid-connect/certs
+      OCR_LANGS: ${OCR_LANGS:-rus+eng}
+      OCR_MAX_PAGES: ${UPLOAD_MAX_PAGES:-60}
+      OCR_MAX_MB: ${UPLOAD_MAX_MB:-30}
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/health').status == 200 else 1)"]
+      interval: 10s
+      retries: 30
+
+  docproc:
+    <<: *restart
+    build:
+      context: ../services
+      dockerfile: Dockerfile.src
+      args:
+        SERVICE: docproc
+    environment:
+      DB_HOST: postgres
+      DOCPROC_DB_PASSWORD: ${DOCPROC_DB_PASSWORD:?}
+      LIQUIBASE_CONTEXTS: ${LIQUIBASE_CONTEXTS:-prod}
+      KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS:?}
+      OIDC_ISSUER_URI: ${OIDC_ISSUER_URI:?}
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: http://keycloak:8080/auth/realms/subsidy/protocol/openid-connect/certs
+      OIDC_TOKEN_URI: http://keycloak:8080/auth/realms/subsidy/protocol/openid-connect/token
+      OTLP_ENDPOINT: ${OTLP_ENDPOINT:?}
+      KC_SVC_DOCPROC_SECRET: ${KC_SVC_DOCPROC_SECRET:?}
+      PACKAGE_URL: ${PACKAGE_URL:?}
+      OCR_URL: ${OCR_URL:-}
+      DOCPROC_WORKERS: ${DOCPROC_WORKERS:-4}
+      JOB_LEASE: ${JOB_LEASE:-2m}
+      JOB_MAX_ATTEMPTS: ${JOB_MAX_ATTEMPTS:-5}
+      CLASSIFY_MIN_CONFIDENCE: ${CLASSIFY_MIN_CONFIDENCE:-0.6}
+      FIELD_REVIEW_THRESHOLD: ${FIELD_REVIEW_THRESHOLD:-0.8}
+      VISION_FALLBACK_ENABLED: ${VISION_FALLBACK_ENABLED:-false}
+      VISION_OCR_MIN_CONF: ${VISION_OCR_MIN_CONF:-0.6}
+      LLM_PROVIDER: ${LLM_PROVIDER:-ollama}
+      LLM_BASE_URL: ${LLM_BASE_URL:-http://ollama:11434}
+      LLM_MODEL: ${LLM_MODEL:-qwen3:8b}
+      LLM_VISION_MODEL: ${LLM_VISION_MODEL:-qwen2.5vl:7b}
+      LLM_API_KEY: ${LLM_API_KEY:-}
+      LLM_JSON_MODE: ${LLM_JSON_MODE:-json_schema}
+      LLM_TIMEOUT_SECONDS: ${LLM_TIMEOUT_SECONDS:-60}
+      LLM_MAX_CONCURRENCY: ${LLM_MAX_CONCURRENCY:-2}
+      GIGACHAT_AUTH_KEY: ${GIGACHAT_AUTH_KEY:-}
+      GIGACHAT_SCOPE: ${GIGACHAT_SCOPE:-GIGACHAT_API_PERS}
+      STAFF_TOKEN_ISSUER: ${STAFF_TOKEN_ISSUER:-https://${PUBLIC_HOST}/package}
+      STAFF_JWKS_URI: http://package:8081/internal/staff/jwks
+    depends_on:
+      postgres: { condition: service_healthy }
+      kafka-topics: { condition: service_completed_successfully }
+    healthcheck:
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/8082 && printf 'GET /actuator/health HTTP/1.0\\r\\n\\r\\n' >&3 && grep -q UP <&3"]
+      interval: 10s
+      retries: 30
+
+  rules:
+    <<: *restart
+    build:
+      context: ../services
+      dockerfile: Dockerfile.src
+      args:
+        SERVICE: rules
+    environment:
+      DB_HOST: postgres
+      RULES_DB_PASSWORD: ${RULES_DB_PASSWORD:?}
+      LIQUIBASE_CONTEXTS: ${LIQUIBASE_CONTEXTS:-prod}
+      KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS:?}
+      OIDC_ISSUER_URI: ${OIDC_ISSUER_URI:?}
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: http://keycloak:8080/auth/realms/subsidy/protocol/openid-connect/certs
+      OIDC_TOKEN_URI: http://keycloak:8080/auth/realms/subsidy/protocol/openid-connect/token
+      KC_SVC_RULES_SECRET: ${KC_SVC_RULES_SECRET:?}
+      DOCPROC_URL: ${DOCPROC_URL:?}
+      OTLP_ENDPOINT: ${OTLP_ENDPOINT:?}
+      STAFF_TOKEN_ISSUER: ${STAFF_TOKEN_ISSUER:-https://${PUBLIC_HOST}/package}
+      STAFF_JWKS_URI: http://package:8081/internal/staff/jwks
+    depends_on:
+      postgres: { condition: service_healthy }
+      kafka-topics: { condition: service_completed_successfully }
+    healthcheck:
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/8083 && printf 'GET /actuator/health HTTP/1.0\\r\\n\\r\\n' >&3 && grep -q UP <&3"]
+      interval: 10s
+      retries: 30
+
+  assistant:
+    <<: *restart
+    build:
+      context: ../services
+      dockerfile: Dockerfile.src
+      args:
+        SERVICE: assistant
+    environment:
+      DB_HOST: postgres
+      ASSISTANT_DB_PASSWORD: ${ASSISTANT_DB_PASSWORD:?}
+      LIQUIBASE_CONTEXTS: ${LIQUIBASE_CONTEXTS:-prod}
+      KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS:?}
+      OIDC_ISSUER_URI: ${OIDC_ISSUER_URI:?}
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: http://keycloak:8080/auth/realms/subsidy/protocol/openid-connect/certs
+      OIDC_TOKEN_URI: http://keycloak:8080/auth/realms/subsidy/protocol/openid-connect/token
+      OTLP_ENDPOINT: ${OTLP_ENDPOINT:?}
+      KC_SVC_ASSISTANT_SECRET: ${KC_SVC_ASSISTANT_SECRET:?}
+      RULES_URL: ${RULES_URL:?}
+      ASSISTANT_ENABLED: ${ASSISTANT_ENABLED:-true}
+      LLM_PROVIDER: ${LLM_PROVIDER:-ollama}
+      LLM_BASE_URL: ${LLM_BASE_URL:-http://ollama:11434}
+      LLM_MODEL: ${LLM_MODEL:-qwen3:8b}
+      LLM_VISION_MODEL: ${LLM_VISION_MODEL:-qwen2.5vl:7b}
+      LLM_API_KEY: ${LLM_API_KEY:-}
+      LLM_JSON_MODE: ${LLM_JSON_MODE:-json_schema}
+      LLM_TIMEOUT_SECONDS: ${LLM_TIMEOUT_SECONDS:-60}
+      LLM_MAX_CONCURRENCY: ${LLM_MAX_CONCURRENCY:-2}
+      GIGACHAT_AUTH_KEY: ${GIGACHAT_AUTH_KEY:-}
+      GIGACHAT_SCOPE: ${GIGACHAT_SCOPE:-GIGACHAT_API_PERS}
+      STAFF_TOKEN_ISSUER: ${STAFF_TOKEN_ISSUER:-https://${PUBLIC_HOST}/package}
+      STAFF_JWKS_URI: http://package:8081/internal/staff/jwks
+    depends_on:
+      postgres: { condition: service_healthy }
+      kafka-topics: { condition: service_completed_successfully }
+    healthcheck:
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/8084 && printf 'GET /actuator/health HTTP/1.0\\r\\n\\r\\n' >&3 && grep -q UP <&3"]
+      interval: 10s
+      retries: 30
+
+  gateway:
+    <<: *restart
+    build:
+      context: ../services
+      dockerfile: Dockerfile.src
+      args:
+        SERVICE: gateway
+    environment:
+      OIDC_ISSUER_URI: ${OIDC_ISSUER_URI:?}
+      OIDC_JWK_SET_URI: http://keycloak:8080/auth/realms/subsidy/protocol/openid-connect/certs
+      PACKAGE_URL: ${PACKAGE_URL:?}
+      DOCPROC_URL: ${DOCPROC_URL:?}
+      RULES_URL: ${RULES_URL:?}
+      ASSISTANT_URL: ${ASSISTANT_URL:?}
+      OTLP_ENDPOINT: ${OTLP_ENDPOINT:?}
+      STAFF_TOKEN_ISSUER: ${STAFF_TOKEN_ISSUER:-https://${PUBLIC_HOST}/package}
+      STAFF_JWKS_URI: http://package:8081/internal/staff/jwks
+    healthcheck:
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/8080 && printf 'GET /actuator/health HTTP/1.0\\r\\n\\r\\n' >&3 && grep -q UP <&3"]
+      interval: 10s
+      retries: 30
+
+  caddy:
+    <<: *restart
+    build:
+      context: ../frontend
+    ports:
+      - "${HTTP_BIND:-80}:80"
+      - "${HTTPS_BIND:-443}:443"
+    environment:
+      PUBLIC_HOST: ${PUBLIC_HOST:?}
+      CADDY_SCHEME: ${CADDY_SCHEME:-}
+    volumes:
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddydata:/data
+    depends_on:
+      keycloak: { condition: service_started }
+      gateway: { condition: service_started }
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:2019/config/"]
+      interval: 10s
+      retries: 10
+
+volumes:
+  pgdata:
+  kafkadata:
+  ollama:
+  caddydata:

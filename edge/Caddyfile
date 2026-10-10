@@ -1,0 +1,19 @@
+# Общий вход сервера для всех кейсов: TLS (Let's Encrypt) и маршрут по имени хоста к Caddy кейса на 127.0.0.1.
+# Кейс за edge поднимается так, чтобы его Caddy слушал только http на своём порту (см. edge/README.md).
+{$DOCUMENTS_HOST:documents.localhost} {
+	reverse_proxy 127.0.0.1:8180 {
+		flush_interval -1
+	}
+}
+
+{$SUBSIDY_HOST:subsidy.localhost} {
+	reverse_proxy 127.0.0.1:8280 {
+		flush_interval -1
+	}
+}
+
+{$PROXODNAYA_HOST:proxodnaya.localhost} {
+	reverse_proxy 127.0.0.1:8380 {
+		flush_interval -1
+	}
+}
