@@ -1,0 +1,9 @@
+# Запуск из IDE против infra/docker-compose (порты проброшены только в override для разработки).
+DB_HOST: localhost
+KAFKA_BOOTSTRAP_SERVERS: localhost:9092
+RULES_DB_PASSWORD: local
+spring:
+  liquibase:
+    contexts: dev
+OIDC_ISSUER_URI: http://localhost:8180/realms/subsidy
+OTLP_ENDPOINT: http://localhost:4318/v1/traces
