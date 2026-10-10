@@ -95,6 +95,7 @@ public class ProjectionService {
         }
         switch (type) {
             case "PackageCreated" -> created(payload);
+            case "PackageApplicationChanged" -> applicationChanged(payload);
             case "PackageDecided" -> decided(payload);
             case "FileReceived", "FileReplaced" -> fileReceived(payload);
             case "FileRemoved" -> fileRemoved(payload);
@@ -133,6 +134,24 @@ public class ProjectionService {
                 .where(Tables.PACKAGE_VIEW.PACKAGE_ID.eq(packageId)).execute();
         history.append(text(payload, INN), text(payload, "decidedBy"), "PACKAGE_DECIDED", packageId,
                 Map.of(K_DECISION, decision));
+    }
+
+    private void applicationChanged(JsonNode payload) {
+        UUID packageId = uuid(payload, PACKAGE_ID);
+        int revision = payload.path("applicationRevision").asInt();
+        int updated = dsl.update(Tables.PACKAGE_VIEW)
+                .set(Tables.PACKAGE_VIEW.ORG_ID, uuid(payload, "orgId"))
+                .set(Tables.PACKAGE_VIEW.INN, text(payload, INN))
+                .set(Tables.PACKAGE_VIEW.APPLICATION, JSONB.valueOf(payload.path("application").toString()))
+                .set(Tables.PACKAGE_VIEW.APPLICATION_REVISION, revision)
+                .set(Tables.PACKAGE_VIEW.UPDATED_AT, OffsetDateTime.now(clock))
+                .where(Tables.PACKAGE_VIEW.PACKAGE_ID.eq(packageId))
+                .and(Tables.PACKAGE_VIEW.APPLICATION_REVISION.lt(revision)).execute();
+        if (updated > 0) {
+            history.append(text(payload, INN), text(payload, "changedBy"), "APPLICATION_CHANGED", packageId,
+                    Map.of("applicationRevision", revision));
+            recheck.request(packageId);
+        }
     }
 
     private void fileReceived(JsonNode payload) {

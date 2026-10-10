@@ -72,8 +72,12 @@ public class FactsAssembler {
                 .orderBy(Tables.PACKAGE_FILES.FILE_ID)
                 .fetch(rec -> new FileFacts(rec.getFileId(), rec.getVersion(), rec.getStage(), rec.getReasonCode()));
         LocalDate packageDate = view.getCreatedAt().atZoneSameInstant(props.zone()).toLocalDate();
+        JsonNode application = view.getApplication() == null ? null : read(view.getApplication().data());
+        if (application != null && application.hasNonNull("applicationDate")) {
+            packageDate = LocalDate.parse(application.path("applicationDate").asText());
+        }
         return Optional.of(new PackageFacts(packageId, view.getInn(), view.getProgramCode(), packageDate, documents,
-                files));
+                files, view.getApplicationRevision(), application));
     }
 
     private Map<UUID, Map<String, String>> overrides(UUID packageId) {

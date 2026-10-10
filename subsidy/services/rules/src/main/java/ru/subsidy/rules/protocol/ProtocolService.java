@@ -122,7 +122,9 @@ public class ProtocolService {
         // через текст: сравнение со снимком из jsonb не зависит от типов чисел Jackson (DecimalNode vs DoubleNode)
         JsonNode snapshot = read(write(Map.of("program", program.code() + "@" + program.version(),
                 "rules", RuleEngine.RULES_VERSION, "documents", facts.documents(), "files", facts.files(),
-                "inn", String.valueOf(facts.inn()), "packageDate", facts.packageDate().toString())));
+                "inn", String.valueOf(facts.inn()), "packageDate", facts.packageDate().toString(),
+                "applicationRevision", facts.applicationRevision(),
+                "application", facts.application() == null ? json.nullNode() : facts.application())));
         Optional<JsonNode> previous = latestFacts(facts.packageId());
         if (previous.isPresent() && previous.get().equals(snapshot)) {
             LOG.debug("facts unchanged package={}", facts.packageId());
@@ -143,6 +145,7 @@ public class ProtocolService {
         saveResults(protocolId, facts, program, results, OffsetDateTime.now(clock));
         Map<String, Object> event = new HashMap<>();
         event.put("packageId", facts.packageId().toString());
+        event.put("applicationRevision", facts.applicationRevision());
         event.put("protocolId", protocolId.toString());
         event.put(VERSION_KEY, version);
         event.put("protocolStatus", status);

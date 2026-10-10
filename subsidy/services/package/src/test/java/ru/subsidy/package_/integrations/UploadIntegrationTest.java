@@ -107,7 +107,7 @@ class UploadIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void upload_zip_isExpandedIntoFiles() throws Exception {
+    void upload_zip_isRejectedWithoutExpanding() throws Exception {
         String packageId = createPackage();
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         try (ZipOutputStream zip = new ZipOutputStream(out)) {
@@ -121,8 +121,8 @@ class UploadIntegrationTest extends AbstractIntegrationTest {
                         .file(new MockMultipartFile("files", "pack.zip", "application/zip", out.toByteArray()))
                         .with(authentication(user("SPECIALIST"))))
                 .andExpect(status().isAccepted())
-                .andExpect(jsonPath("$.files.length()").value(2))
-                .andExpect(jsonPath("$.rejected.length()").value(0));
+                .andExpect(jsonPath("$.files.length()").value(0))
+                .andExpect(jsonPath("$.rejected[0].code").value("FILE_TYPE_UNSUPPORTED"));
     }
 
     @Test
@@ -137,5 +137,16 @@ class UploadIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.files.length()").value(1))
                 .andExpect(jsonPath("$.rejected[0].code").value("DUPLICATE_FILE"))
                 .andExpect(jsonPath("$.rejected[0].name").value("copy.pdf"));
+    }
+
+    @Test
+    void bytesDeterminePdfRegardlessOfFilenameOrClientMime() throws Exception {
+        String id = createPackage();
+        mockMvc.perform(multipart("/api/v1/packages/" + id + "/files")
+                        .file(new MockMultipartFile("files", "picture.jpg", "image/jpeg", pdf()))
+                        .file(new MockMultipartFile("files", "fake.pdf", "application/pdf", "text".getBytes()))
+                        .with(authentication(user("SPECIALIST"))))
+                .andExpect(status().isAccepted()).andExpect(jsonPath("$.files.length()").value(1))
+                .andExpect(jsonPath("$.rejected[0].code").value("FILE_TYPE_UNSUPPORTED"));
     }
 }

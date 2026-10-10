@@ -16,6 +16,8 @@ import java.util.UUID;
 
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
+import org.apache.pdfbox.Loader;
+import org.apache.pdfbox.pdmodel.interactive.digitalsignature.PDSignature;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -64,6 +66,36 @@ class FileVersionsIntegrationTest extends AbstractIntegrationTest {
                         .with(authentication(user())))
                 .andExpect(status().isAccepted()).andReturn().getResponse().getContentAsString();
         return new String[] {packageId, JsonPath.read(body, "$.files[0].fileId")};
+    }
+
+    @Test
+    void signaturePresenceIsStoredForEachVersionAndShownInCard() throws Exception {
+        byte[] signed;
+        try (PDDocument doc = Loader.loadPDF(pdf(1)); ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+            PDSignature signature = new PDSignature();
+            signature.setFilter(PDSignature.FILTER_ADOBE_PPKLITE);
+            signature.setSubFilter(PDSignature.SUBFILTER_ADBE_PKCS7_DETACHED);
+            doc.addSignature(signature, content -> new byte[] {1, 2, 3});
+            doc.saveIncremental(out);
+            signed = out.toByteArray();
+        }
+        String[] ids = upload(signed);
+        UUID fileId = UUID.fromString(ids[1]);
+        mockMvc.perform(get("/api/v1/packages/" + ids[0]).with(authentication(user())))
+                .andExpect(jsonPath("$.files[0].electronicSignature.status").value("PRESENT"))
+                .andExpect(jsonPath("$.files[0].electronicSignature.cryptographicallyVerified").value(false));
+        String url = "/api/v1/packages/" + ids[0] + "/files/" + ids[1] + "/versions";
+        mockMvc.perform(multipart(url).file(new MockMultipartFile("file", "fake.pdf", "application/pdf", new byte[] {1}))
+                        .with(authentication(user())))
+                .andExpect(jsonPath("$.rejected[0].code").value("FILE_TYPE_UNSUPPORTED"));
+        mockMvc.perform(multipart(url).file(new MockMultipartFile("file", "unsigned.pdf", "application/pdf", pdf(2)))
+                        .with(authentication(user())))
+                .andExpect(jsonPath("$.files.length()").value(1));
+        mockMvc.perform(get("/api/v1/packages/" + ids[0]).with(authentication(user())))
+                .andExpect(jsonPath("$.files[0].electronicSignature.status").value("ABSENT"));
+        assertThat(dsl.select(Tables.FILE_VERSIONS.SIGNATURE_STATUS).from(Tables.FILE_VERSIONS)
+                .where(Tables.FILE_VERSIONS.FILE_ID.eq(fileId)).and(Tables.FILE_VERSIONS.VERSION.eq(1))
+                .fetchSingle(Tables.FILE_VERSIONS.SIGNATURE_STATUS)).isEqualTo("PRESENT");
     }
 
     @Test

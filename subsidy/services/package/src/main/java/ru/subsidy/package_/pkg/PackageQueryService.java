@@ -9,6 +9,7 @@ import java.util.UUID;
 
 import org.jooq.Condition;
 import org.jooq.DSLContext;
+import org.jooq.Field;
 import org.jooq.Record;
 import org.jooq.impl.DSL;
 import org.springframework.stereotype.Service;
@@ -29,6 +30,9 @@ public class PackageQueryService {
     /** Максимальный размер страницы. */
     public static final int MAX_LIMIT = 100;
     private static final String SEPARATOR = "|";
+    private static final Field<String> ORG_NAME = DSL.coalesce(
+            DSL.field("{0}->>'orgName'", String.class, Tables.PACKAGES.APPLICATION), Tables.ORGANIZATIONS.NAME)
+            .as("applicant_name");
 
     private final DSLContext dsl;
 
@@ -73,7 +77,7 @@ public class PackageQueryService {
         List<QueueItem> rows = dsl.select(Tables.PACKAGES.ID, Tables.PACKAGES.STATUS, Tables.PACKAGES.PROGRAM_CODE,
                         Tables.PACKAGES.PROTOCOL_STATUS, Tables.PACKAGES.COMPLETENESS, Tables.PACKAGES.FAILED,
                         Tables.PACKAGES.WARNINGS, Tables.PACKAGES.NEEDS_REVIEW, Tables.PACKAGES.UPDATED_AT,
-                        Tables.ORGANIZATIONS.INN, Tables.ORGANIZATIONS.NAME)
+                        Tables.ORGANIZATIONS.INN, ORG_NAME)
                 .from(Tables.PACKAGES).join(Tables.ORGANIZATIONS).on(Tables.ORGANIZATIONS.ID.eq(Tables.PACKAGES.ORG_ID))
                 .where(page)
                 .orderBy(Tables.PACKAGES.UPDATED_AT.desc(), Tables.PACKAGES.ID.desc())
@@ -90,7 +94,7 @@ public class PackageQueryService {
 
     private static QueueItem toItem(Record rec) {
         return new QueueItem(rec.get(Tables.PACKAGES.ID),
-                new OrgRef(rec.get(Tables.ORGANIZATIONS.INN), rec.get(Tables.ORGANIZATIONS.NAME)),
+                new OrgRef(rec.get(Tables.ORGANIZATIONS.INN), rec.get(ORG_NAME)),
                 rec.get(Tables.PACKAGES.PROGRAM_CODE), rec.get(Tables.PACKAGES.STATUS),
                 rec.get(Tables.PACKAGES.PROTOCOL_STATUS), rec.get(Tables.PACKAGES.COMPLETENESS),
                 rec.get(Tables.PACKAGES.FAILED), rec.get(Tables.PACKAGES.WARNINGS),

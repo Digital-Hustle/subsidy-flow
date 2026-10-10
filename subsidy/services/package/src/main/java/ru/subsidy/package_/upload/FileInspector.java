@@ -16,8 +16,9 @@ import ru.subsidy.package_.upload.checks.FormatCheck;
 @Component
 public class FileInspector {
 
-    /** ZIP передаётся в ZipExpander, сам по себе не документ. */
+    /** Сигнатура ZIP; архивы не принимаются без отдельного согласования. */
     public static final String ZIP = "application/zip";
+    private static final String PDF = "application/pdf";
 
     private final Tika tika = new Tika();
     private final UploadLimits limits;
@@ -48,12 +49,12 @@ public class FileInspector {
             result = InspectionResult.rejected(null, RejectReason.FILE_TOO_LARGE);
         } else {
             String mime = detect(content);
-            if (ZIP.equals(mime)) {
-                result = InspectionResult.accepted(mime, 0);
-            } else {
+            if (PDF.equals(mime)) {
                 result = checks.stream().filter(check -> check.supports(mime)).findFirst()
                         .map(check -> check.inspect(content, mime, limits))
                         .orElseGet(() -> InspectionResult.rejected(mime, RejectReason.FILE_TYPE_UNSUPPORTED));
+            } else {
+                result = InspectionResult.rejected(mime, RejectReason.FILE_TYPE_UNSUPPORTED);
             }
         }
         return result;

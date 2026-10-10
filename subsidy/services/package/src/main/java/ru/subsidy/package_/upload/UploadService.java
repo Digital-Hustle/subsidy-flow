@@ -42,7 +42,6 @@ public class UploadService {
     private final FileInspector inspector;
     private final FileCrypto crypto;
     private final OutboxWriter outbox;
-    private final ZipExpander zips;
     private final Clock clock;
     private final int maxFiles;
 
@@ -54,18 +53,16 @@ public class UploadService {
      * @param inspector проверки
      * @param crypto шифрование
      * @param outbox outbox
-     * @param zips распаковка ZIP
      * @param clock часы
      * @param maxFiles UPLOAD_MAX_FILES
      */
     public UploadService(DSLContext dsl, TransactionTemplate transactions, FileInspector inspector, FileCrypto crypto,
-                         OutboxWriter outbox, ZipExpander zips, Clock clock, @Value("${UPLOAD_MAX_FILES:60}") int maxFiles) {
+                         OutboxWriter outbox, Clock clock, @Value("${UPLOAD_MAX_FILES:60}") int maxFiles) {
         this.dsl = dsl;
         this.transactions = transactions;
         this.inspector = inspector;
         this.crypto = crypto;
         this.outbox = outbox;
-        this.zips = zips;
         this.clock = clock;
         this.maxFiles = maxFiles;
     }
@@ -92,27 +89,9 @@ public class UploadService {
         Batch batch = new Batch(present);
         for (IncomingFile file : files) {
             InspectionResult result = inspector.inspect(file.content());
-            if (result.isAccepted() && FileInspector.ZIP.equals(result.mime())) {
-                expand(packageId, file, userId, batch);
-            } else {
-                admit(packageId, file, result, userId, batch);
-            }
+            admit(packageId, file, result, userId, batch);
         }
         return new UploadResult(batch.accepted(), batch.rejected());
-    }
-
-    private void expand(UUID packageId, IncomingFile archive, String userId, Batch batch) {
-        List<IncomingFile> entries;
-        try {
-            entries = zips.expand(archive.content());
-        } catch (ZipRejectedException rejection) {
-            batch.reject(archive.name(), RejectReason.ZIP_UNSAFE,
-                    RejectReason.ZIP_UNSAFE.detail() + ": " + rejection.getMessage());
-            return;
-        }
-        for (IncomingFile entry : entries) {
-            admit(packageId, entry, inspector.inspect(entry.content()), userId, batch);
-        }
     }
 
     private void admit(UUID packageId, IncomingFile file, InspectionResult result, String userId, Batch batch) {
@@ -171,6 +150,8 @@ public class UploadService {
                 .set(Tables.FILE_VERSIONS.MIME, result.mime())
                 .set(Tables.FILE_VERSIONS.SIZE_BYTES, (long) file.content().length)
                 .set(Tables.FILE_VERSIONS.PAGES, result.pages())
+                .set(Tables.FILE_VERSIONS.SIGNATURE_STATUS, result.electronicSignature().status())
+                .set(Tables.FILE_VERSIONS.SIGNATURE_REASON, result.electronicSignature().reason())
                 .set(Tables.FILE_VERSIONS.ORIGINAL_NAME, displayName(file.name()))
                 .set(Tables.FILE_VERSIONS.CREATED_BY, userId)
                 .set(Tables.FILE_VERSIONS.CREATED_AT, now)

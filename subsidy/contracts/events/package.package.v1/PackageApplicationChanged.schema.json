@@ -1,0 +1,151 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:subsidy:events:package.package.v1:PackageApplicationChanged",
+  "title": "PackageApplicationChanged",
+  "description": "Снимок новой ревизии заявки; запускает перепроверку rules.",
+  "type": "object",
+  "required": [
+    "packageId",
+    "orgId",
+    "inn",
+    "programCode",
+    "applicationRevision",
+    "changedBy",
+    "changedAt",
+    "application"
+  ],
+  "properties": {
+    "packageId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "orgId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "inn": {
+      "type": "string",
+      "pattern": "^[0-9]{10}$"
+    },
+    "programCode": {
+      "type": "string"
+    },
+    "applicationRevision": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "changedBy": {
+      "type": "string"
+    },
+    "changedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "application": {
+      "type": "object",
+      "required": [
+        "orgInn",
+        "orgName",
+        "ogrn",
+        "address",
+        "project",
+        "requestedAmount",
+        "applicationDate",
+        "signatory"
+      ],
+      "properties": {
+        "orgInn": {
+          "type": "string",
+          "pattern": "^[0-9]{10}$"
+        },
+        "orgName": {
+          "type": "string"
+        },
+        "ogrn": {
+          "type": "string",
+          "pattern": "^[0-9]{13}$"
+        },
+        "address": {
+          "type": "object",
+          "required": [
+            "value",
+            "purpose"
+          ],
+          "properties": {
+            "value": {
+              "type": "string"
+            },
+            "purpose": {
+              "enum": [
+                "LEGAL",
+                "ACTUAL",
+                "PROJECT"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        "project": {
+          "type": "string"
+        },
+        "requestedAmount": {
+          "type": "string",
+          "pattern": "^[0-9]+(\\.[0-9]{1,2})?([Ee][+-]?[0-9]+)?$"
+        },
+        "applicationDate": {
+          "type": "string",
+          "format": "date"
+        },
+        "signatory": {
+          "type": "object",
+          "required": [
+            "fullName",
+            "position",
+            "authority"
+          ],
+          "properties": {
+            "fullName": {
+              "type": "string"
+            },
+            "position": {
+              "type": "string"
+            },
+            "authority": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        "property": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "required": [
+            "cadastralNumber",
+            "address",
+            "rightType"
+          ],
+          "properties": {
+            "cadastralNumber": {
+              "type": "string"
+            },
+            "address": {
+              "type": "string"
+            },
+            "rightType": {
+              "enum": [
+                "OWNERSHIP",
+                "LEASE",
+                "USE"
+              ]
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

@@ -21,9 +21,9 @@
 
 ## package (`/package/api/v1`)
 - `GET /organizations?inn=` → организация или 404; `POST /organizations` `{inn}` → 201 (ИНН проверяется контрольной суммой, `INN_INVALID`)
-- `POST /packages` `{orgInn, programCode}` → 201 `{packageId, status: COLLECTING}` (`Idempotency-Key`)
+- `POST /packages` `{orgInn, programCode, application?}` → 201 `{packageId, status: COLLECTING}` (`Idempotency-Key`)
 - `GET /packages?status=&inn=&program=&cursor=` → очередь: `{id, org, program, status, completeness, failed, warnings, needsReview, updatedAt}`
-- `POST /packages/{id}/files` multipart `files[]` (файлы или ZIP) → **202** `{files: [{fileId, stage: RECEIVED, duplicateOf?}], rejected: [{name, code, detail, hint}]}` — отказ одного файла не отменяет остальные
+- `POST /packages/{id}/files` multipart `files[]` (только PDF) → **202** `{files: [{fileId, stage: RECEIVED, duplicateOf?}], rejected: [{name, code, detail, hint}]}` — отказ одного файла не отменяет остальные
 - `POST /packages/{id}/files/{fileId}/versions` multipart `file` → 202 (замена / повторная загрузка, FR-65)
 - `DELETE /packages/{id}/files/{fileId}` → 204
 - `GET /packages/{id}` → `{packageId, status, org, program, protocol: {status, completeness, failed, warnings, needsReview}|null, decision: {decision, comment, decidedBy, decidedAt}|null, updatedAt, files: [{fileId, version, name, mime, pages, stage, reasonCode?, documents: [{documentId, fromPage, toPage, type, typeConfidence, source, stage}]}]}`
@@ -74,7 +74,7 @@
 |---|---|---|---|
 | FILE_EMPTY | 400 | Файл пустой | Выберите файл ещё раз |
 | FILE_TOO_LARGE | 413 | Файл больше {max} МБ | Разделите документ или уменьшите разрешение скана |
-| FILE_TYPE_UNSUPPORTED | 415 | Такой формат не поддерживается | Подойдут PDF, JPG, PNG, TIFF, HEIC, DOCX, XLSX, ZIP |
+| FILE_TYPE_UNSUPPORTED | в rejected[] ответа 202 | Принимаются только документы PDF | Сохраните документ в PDF; изображения, Office и ZIP не принимаются |
 | FILE_CORRUPTED | 422 | Файл повреждён и не открывается | Сохраните документ заново |
 | PDF_ENCRYPTED | 422 | PDF защищён паролем | Снимите пароль и загрузите снова |
 | TOO_MANY_PAGES | 422 | Слишком много страниц ({max}) | Разделите файл |
