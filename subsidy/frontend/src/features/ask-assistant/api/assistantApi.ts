@@ -10,7 +10,7 @@ export type ChatMessage = {
   validatorStatus: string | null; validatorDetails: unknown; createdAt: string;
 };
 
-/** AS-01..05: вопрос по пакету, история, подсказки. Ответ строится только из инструментов rules. */
+/** Вопрос по заявке, история, подсказки. Ответ строится только из инструментов rules. */
 export const assistantApi = {
   ask: (packageId: string, question: string) => api<AskAnswer>("assistant", `/packages/${packageId}/ask`, { method: "POST", body: { question } }),
   messages: (packageId: string) => api<{ items: ChatMessage[] }>("assistant", `/packages/${packageId}/messages`),

@@ -40,7 +40,7 @@ export function Select<T extends string>({ value, onChange, options, className, 
     addEventListener("resize", reflow);
     addEventListener("scroll", reflow, true);
     return () => { removeEventListener("pointerdown", close, true); removeEventListener("resize", reflow); removeEventListener("scroll", reflow, true); };
-  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [open]);  
   useEffect(() => { if (open) list.current?.querySelector<HTMLElement>(`[data-i="${active}"]`)?.scrollIntoView({ block: "nearest" }); }, [active, open]);
 
   const pick = (i: number) => { const o = options[i]; if (o) onChange(o.value); setOpen(false); btn.current?.focus(); };
