@@ -1,0 +1,58 @@
+server:
+  port: 8080
+spring:
+  application:
+    name: gateway
+  cloud:
+    gateway:
+      server:
+        webflux:
+          routes:
+            - id: package
+              uri: ${PACKAGE_URL:http://localhost:8081}
+              predicates: [ "Path=/package/api/**" ]
+              filters: [ "RewritePath=/package/(?<rest>.*), /$\\{rest}" ]
+            - id: docproc
+              uri: ${DOCPROC_URL:http://localhost:8082}
+              predicates: [ "Path=/docproc/api/**" ]
+              filters: [ "RewritePath=/docproc/(?<rest>.*), /$\\{rest}" ]
+            - id: rules
+              uri: ${RULES_URL:http://localhost:8083}
+              predicates: [ "Path=/rules/api/**" ]
+              filters: [ "RewritePath=/rules/(?<rest>.*), /$\\{rest}" ]
+            - id: assistant
+              uri: ${ASSISTANT_URL:http://localhost:8084}
+              predicates: [ "Path=/assistant/api/**" ]
+              filters: [ "RewritePath=/assistant/(?<rest>.*), /$\\{rest}" ]
+app:
+  limits:
+    uploads-per-minute: ${RATE_UPLOADS_PER_MINUTE:30}
+    questions-per-minute: ${RATE_QUESTIONS_PER_MINUTE:20}
+    upload-max-mb: ${GATEWAY_UPLOAD_MAX_MB:512}
+    body-max-kb: ${GATEWAY_BODY_MAX_KB:1024}
+    logins-per-minute: ${RATE_LOGINS_PER_MINUTE:20}
+  staff-token:
+    issuer: ${STAFF_TOKEN_ISSUER:https://localhost/package}
+    jwks-uri: ${STAFF_JWKS_URI:http://localhost:8081/internal/staff/jwks}
+  oidc:
+    issuer: ${OIDC_ISSUER_URI:https://localhost/auth/realms/subsidy}
+    jwk-set-uri: ${OIDC_JWK_SET_URI:http://localhost:8180/auth/realms/subsidy/protocol/openid-connect/certs}
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+  tracing:
+    sampling:
+      probability: 1.0
+  otlp:
+    tracing:
+      endpoint: ${OTLP_ENDPOINT:http://localhost:4318/v1/traces}
+logging:
+  structured:
+    format:
+      console: ecs
