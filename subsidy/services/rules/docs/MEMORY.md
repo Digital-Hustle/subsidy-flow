@@ -4,6 +4,7 @@
 
 ## 1. Текущее состояние
 - B1-2: `PackageApplicationChanged` обновляет снимок и ревизию заявки, запрашивает перепроверку; ревизия включена в факты и `PackageChecked` (ADR-026).
+- PR #1: OpenAPI `PackageFacts` включает снимок заявки и её ревизию; типы клиента генерируются из этого контракта. В CI от 2026-10-10 миграции и backend-тесты прошли, обнаружено и исправлено рассогласование OpenAPI.
 - RUL-01..16 готовы (#43): проекция из событий → debounce-перепроверка (`recheck_requests`, SKIP LOCKED) → `ProtocolService.check` → неизменяемый протокол + `PackageChecked`.
 - FR-30: правила п. 4.3 — данные программы (`programs.params.rules`), движок `engine/declarative` (ProgramRules + 9 операций), запуск — `ProgramRulesRule`; хардкод — только `OutlierRule`. Программы INNOVATION/BEACH/MODERNIZATION (миграция `20261010090000-case-programs.sql`), DEMO-2026 удалена. RULES_VERSION 2026.10-3.
 - Протокол создаётся только когда все файлы в терминальной стадии; новая версия — только при изменении фактов.
