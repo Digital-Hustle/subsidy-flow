@@ -10,7 +10,7 @@ export const ApplyShell = () => {
   return (
     <div className="relative isolate min-h-svh text-foreground">
       <HeaderBar inner="max-w-2xl">
-        <Link to={routes.apply} className="shrink-0 rounded-md px-1.5 outline-none focus-visible:ring-2 focus-visible:ring-ring"><Logo sub="кабинет заявителя" /></Link>
+        <Link to={routes.home} aria-label="На главную" className="shrink-0 rounded-md px-1.5 outline-none focus-visible:ring-2 focus-visible:ring-ring"><Logo sub="кабинет заявителя" /></Link>
         <div className="ml-auto flex items-center gap-1.5"><PreferencesButton /></div>
       </HeaderBar>
       <OfflineBanner text="Нет связи — загрузка продолжится, когда связь вернётся" />

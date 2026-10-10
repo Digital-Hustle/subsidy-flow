@@ -24,6 +24,8 @@ const RULE_TITLE: Record<string, string> = {
   CADASTRAL_FORMAT: "Кадастровый номер в принятом формате",
   PRESENTATION_NOT_EMPTY: "Презентация не пустая",
   VISUAL_SIGNATURE: "Подпись видна на документе",
+  INN_CHECKSUM: "Контрольные цифры ИНН сходятся",
+  OGRN_CHECKSUM: "Контрольная цифра ОГРН сходится",
 };
 export const ruleTitle = (code: string) => RULE_TITLE[code] ?? code;
 

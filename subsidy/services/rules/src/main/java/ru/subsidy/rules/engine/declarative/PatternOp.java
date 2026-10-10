@@ -13,7 +13,8 @@ import ru.subsidy.rules.facts.DocFacts;
 /**
  * PATTERN: значение поля соответствует формату (ИНН — 10 или 12 цифр, кадастровый номер, …).
  * Параметры: {@code types}, {@code field}, {@code pattern}, {@code normalize} (digits | compact | none),
- * {@code hint} — как должно выглядеть значение.
+ * {@code hint} — как должно выглядеть значение, {@code checksum} (inn | ogrn) — ещё и контрольный разряд (ADR-025:
+ * отдельным правилом WARNING, синтетические реквизиты открытого набора не валят пакет).
  */
 public final class PatternOp implements DeclarativeOp {
 
@@ -23,6 +24,7 @@ public final class PatternOp implements DeclarativeOp {
     private static final String DIGITS = "digits";
     private static final String COMPACT = "compact";
     private static final String NONE = "none";
+    private static final String CHECKSUM = "checksum";
 
     @Override
     public String name() {
@@ -36,7 +38,7 @@ public final class PatternOp implements DeclarativeOp {
 
     @Override
     public List<String> parameters() {
-        return List.of(Params.TYPES, Params.FIELD, PATTERN, NORMALIZE, HINT);
+        return List.of(Params.TYPES, Params.FIELD, PATTERN, NORMALIZE, HINT, CHECKSUM);
     }
 
     @Override
@@ -48,6 +50,10 @@ public final class PatternOp implements DeclarativeOp {
         if (!List.of(DIGITS, COMPACT, NONE).contains(normalize)) {
             throw Params.invalid(spec, "normalize — digits, compact или none");
         }
+        if (spec.params().has(CHECKSUM)
+                && !List.of(Checksums.INN, Checksums.OGRN).contains(Params.text(spec, CHECKSUM))) {
+            throw Params.invalid(spec, "checksum — inn или ogrn");
+        }
     }
 
     @Override
@@ -55,6 +61,7 @@ public final class PatternOp implements DeclarativeOp {
         String field = Params.text(spec, Params.FIELD);
         Pattern pattern = Params.pattern(spec, PATTERN);
         String normalize = Params.text(spec, NORMALIZE, NONE);
+        String checksum = Params.text(spec, CHECKSUM, "");
         List<String> bad = new ArrayList<>();
         List<Evidence> where = new ArrayList<>();
         int seen = 0;
@@ -65,7 +72,8 @@ public final class PatternOp implements DeclarativeOp {
             }
             seen++;
             String normalized = normalize(value.get(), normalize);
-            if (!pattern.matcher(normalized).matches()) {
+            if (!pattern.matcher(normalized).matches()
+                    || !checksum.isEmpty() && !Checksums.valid(checksum, Docs.digits(normalized))) {
                 bad.add(Docs.title(doc.type()) + " — «" + value.get() + "»");
                 where.add(Evidence.of(doc, field));
             }

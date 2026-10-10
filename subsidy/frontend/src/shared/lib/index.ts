@@ -6,3 +6,4 @@ export * from "./applicationKey";
 export * from "./image";
 export * from "./qrShape";
 export { parseContact, contactError, type Contact } from "./contact";
+export { innValid, ogrnValid, innError, ogrnError } from "./requisites";
