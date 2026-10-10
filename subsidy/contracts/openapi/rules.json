@@ -166,6 +166,90 @@
         }
       }
     },
+    "/api/v1/programs" : {
+      "get" : {
+        "tags" : [ "programs-controller-impl" ],
+        "operationId" : "programs",
+        "responses" : {
+          "400" : {
+            "description" : "Bad Request",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "413" : {
+            "description" : "Payload Too Large",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ItemsProgramRs"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post" : {
+        "tags" : [ "programs-controller-impl" ],
+        "operationId" : "create",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ProgramCreateRq"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "400" : {
+            "description" : "Bad Request",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "413" : {
+            "description" : "Payload Too Large",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "201" : {
+            "description" : "Created",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProgramRs"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/packages/{packageId}/projection/rebuild" : {
       "post" : {
         "tags" : [ "protocol-controller-impl" ],
@@ -368,10 +452,18 @@
         }
       }
     },
-    "/api/v1/programs" : {
+    "/api/v1/programs/{code}/versions" : {
       "get" : {
         "tags" : [ "programs-controller-impl" ],
-        "operationId" : "programs",
+        "operationId" : "versions",
+        "parameters" : [ {
+          "name" : "code",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
         "responses" : {
           "400" : {
             "description" : "Bad Request",
@@ -447,7 +539,7 @@
     "/api/v1/packages/{packageId}/protocols" : {
       "get" : {
         "tags" : [ "protocol-controller-impl" ],
-        "operationId" : "versions",
+        "operationId" : "versions_1",
         "parameters" : [ {
           "name" : "packageId",
           "in" : "path",
@@ -850,6 +942,9 @@
           "updatedAt" : {
             "type" : "string",
             "format" : "date-time"
+          },
+          "accepting" : {
+            "type" : "boolean"
           }
         }
       },
@@ -889,6 +984,28 @@
             "type" : "string"
           }
         }
+      },
+      "ProgramCreateRq" : {
+        "type" : "object",
+        "properties" : {
+          "code" : {
+            "type" : "string",
+            "minLength" : 1,
+            "pattern" : "[A-Z][A-Z0-9_]{1,31}"
+          },
+          "name" : {
+            "type" : "string",
+            "maxLength" : 300,
+            "minLength" : 0
+          },
+          "params" : {
+            "$ref" : "#/components/schemas/JsonNode"
+          },
+          "checklist" : {
+            "$ref" : "#/components/schemas/JsonNode"
+          }
+        },
+        "required" : [ "checklist", "code", "name", "params" ]
       },
       "RebuildRs" : {
         "type" : "object",
