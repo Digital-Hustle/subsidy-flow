@@ -30,13 +30,13 @@ class ApplicationDataValidationTest {
 
     @Test
     void soleProprietorInnAndOgrnipAreAccepted() {
-        ApplicationData ip = new ApplicationData("500100732259", "ИП Тестов", "304500116000157",
+        ApplicationData soleTrader = new ApplicationData("500100732259", "ИП Тестов", "304500116000157",
                 new ApplicationData.Address("Москва", "LEGAL"), "Проект", new BigDecimal("100.00"),
                 LocalDate.of(2026, 10, 10), new ApplicationData.Signatory("Тестов", "ИП", "ОГРНИП"), null);
         try (var factory = Validation.buildDefaultValidatorFactory()) {
-            assertThat(factory.getValidator().validate(ip)).isEmpty();
+            assertThat(factory.getValidator().validate(soleTrader)).isEmpty();
             assertThat(factory.getValidator().validate(new ApplicationData("12345678901", "Х", "1027700132195",
-                    ip.address(), "П", ip.requestedAmount(), ip.applicationDate(), ip.signatory(), null))).hasSize(1);
+                    soleTrader.address(), "П", soleTrader.requestedAmount(), soleTrader.applicationDate(), soleTrader.signatory(), null))).hasSize(1);
         }
     }
 
