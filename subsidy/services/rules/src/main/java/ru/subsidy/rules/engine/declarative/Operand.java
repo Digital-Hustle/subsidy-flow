@@ -112,6 +112,15 @@ record Operand(String text, Ref left, int sign, Ref right) {
      * @param type вид
      * @param field поле
      */
+    /**
+     * Ссылается ли выражение на сохранённую анкету (APPLICANT.поле).
+     *
+     * @return true, если есть ссылка на анкету
+     */
+    boolean usesApplicant() {
+        return APPLICANT.equals(left.type()) || right != null && APPLICANT.equals(right.type());
+    }
+
     record Ref(String type, String field) {
 
         /**

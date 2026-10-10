@@ -26,6 +26,13 @@ public final class ApplicationMatchOp implements DeclarativeOp {
     private static final String SPACE = " ";
     private static final String WHITESPACE = "\\s+";
     private static final int ARRAY_SUFFIX_LENGTH = 3;
+    private static final String[][] LEGAL_FORMS = {
+        {"общество с ограниченной ответственностью", "ооо"},
+        {"непубличное акционерное общество", "ао"},
+        {"публичное акционерное общество", "пао"},
+        {"акционерное общество", "ао"},
+        {"индивидуальный предприниматель", "ип"},
+    };
 
     @Override
     public String name() {
@@ -66,6 +73,9 @@ public final class ApplicationMatchOp implements DeclarativeOp {
 
     @Override
     public RuleResult apply(RuleSpec spec, Scope scope) {
+        if (scope.facts().application() == null || scope.facts().application().isNull()) {
+            return spec.notApplicable("Анкета заявки не заполнена — сверка с ней не выполняется");
+        }
         if (!condition(spec, scope)) {
             return spec.notApplicable("Условие сверки не выполнено для этой заявки");
         }
@@ -139,9 +149,18 @@ public final class ApplicationMatchOp implements DeclarativeOp {
         if (DIGITS.equals(mode)) {
             return Docs.digits(value);
         }
-        String text = value.toLowerCase(Locale.ROOT).replace('ё', 'е');
+        String text = legalForm(value.toLowerCase(Locale.ROOT).replace('ё', 'е'));
         return COMPACT.equals(mode) ? text.replaceAll(WHITESPACE, "")
                 : text.replaceAll("[^\\p{L}\\p{N}]+", SPACE).strip().replaceAll(WHITESPACE, SPACE);
+    }
+
+    /** Полная и краткая форма ОПФ считаются одинаковыми: «Общество с ограниченной ответственностью» = «ООО». */
+    private static String legalForm(String text) {
+        String out = text;
+        for (String[] form : LEGAL_FORMS) {
+            out = out.replace(form[0], form[1]);
+        }
+        return out;
     }
 
     private record Comparison(String actual, List<Evidence> evidence, boolean missing, boolean mismatch) {

@@ -58,7 +58,9 @@ public final class SignaturePresenceOp implements DeclarativeOp {
                     + (signature.reason() == null ? "" : " (" + signature.reason() + ")"));
             evidence.add(Evidence.of(doc, "electronicSignature"));
         }
-        String status = required && absent ? spec.severity() : unknown ? RuleStatus.DATA_MISSING : RuleStatus.PASSED;
+        // необязательная ЭП — справка: неизвестный признак (не PDF, старая версия) не требует внимания специалиста
+        String status = !required ? RuleStatus.PASSED
+                : absent ? spec.severity() : unknown ? RuleStatus.DATA_MISSING : RuleStatus.PASSED;
         return new RuleResult(spec.code(), status, "ЭП всего PDF (не конкретной страницы): "
                 + String.join(Texts.SEMI, actual) + ". Действительность не проверена; наличие "
                 + (required ? "обязательно по правилу" : "показано справочно"), evidence,

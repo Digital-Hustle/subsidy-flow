@@ -85,7 +85,7 @@ class Backend3RulesTest {
         assertThat(result(facts, "APPLICATION_TENANT").status()).isEqualTo(RuleStatus.PASSED);
         assertThat(result(facts, "APPLICATION_OWNER").status()).isEqualTo(RuleStatus.NOT_APPLICABLE);
         assertThat(result(Fixture.pkg().application(application()).doc(Docs.PROPERTY_DOC,
-                "tenant", "Другой арендатор"), "APPLICATION_TENANT").status()).isEqualTo(RuleStatus.FAILED);
+                "tenant", "Другой арендатор"), "APPLICATION_TENANT").status()).isEqualTo(RuleStatus.WARNING);
         ObjectNode owned = application();
         ((ObjectNode) owned.path("property")).put("rightType", "OWNERSHIP");
         assertThat(result(Fixture.pkg().application(owned).doc(Docs.PROPERTY_DOC, "rightHolder", "ООО Тест"),
@@ -101,10 +101,11 @@ class Backend3RulesTest {
         assertThat(result(facts, "GUARANTEE_BENEFICIARY_INN").status()).isEqualTo(RuleStatus.PASSED);
         assertThat(result(facts, "GUARANTEE_BENEFICIARY_NAME").status()).isEqualTo(RuleStatus.PASSED);
         assertThat(result(Fixture.pkg().application(application()).doc(Docs.GUARANTEE_LETTER,
-                "beneficiaryInn", "6103050782"), "GUARANTEE_BENEFICIARY_INN").status()).isEqualTo(RuleStatus.FAILED);
+                "beneficiaryInn", "6103050782"), "GUARANTEE_BENEFICIARY_INN").status()).isEqualTo(RuleStatus.WARNING);
+        // письмо пишет сам заявитель: получатель не указан, гарант — заявитель
         assertThat(result(Fixture.pkg().application(application()).doc(Docs.GUARANTEE_LETTER,
                 "guarantorInn", Fixture.APPLICANT), "GUARANTEE_BENEFICIARY_INN").status())
-                .isEqualTo(RuleStatus.DATA_MISSING);
+                .isEqualTo(RuleStatus.PASSED);
     }
 
     @Test
@@ -115,7 +116,10 @@ class Backend3RulesTest {
         assertThat(result(facts, "APPLICATION_INN").status()).isEqualTo(RuleStatus.PASSED);
         assertThat(result(facts, "APPLICATION_ORG").status()).isEqualTo(RuleStatus.PASSED);
         assertThat(result(Fixture.pkg().doc(Docs.APPLICATION, "inn", Fixture.APPLICANT), "APPLICATION_INN").status())
-                .isEqualTo(RuleStatus.DATA_MISSING);
+                .isEqualTo(RuleStatus.NOT_APPLICABLE);
+        assertThat(result(Fixture.pkg().application(application()).doc(Docs.BANK_STATEMENT,
+                "orgName", "Общество с ограниченной ответственностью «Тест»"), "APPLICATION_ORG").status())
+                .isEqualTo(RuleStatus.PASSED);
     }
 
     @Test
@@ -142,13 +146,17 @@ class Backend3RulesTest {
         assertThat(result(Fixture.pkg().doc(Docs.APPLICATION, "totalCost", "1000.00")
                 .doc(Docs.COST_JUSTIFICATION, "totalCost", "1000.00"), "REQUEST_MATCH").status())
                 .isEqualTo(RuleStatus.DATA_MISSING);
+        // ТЗ 4.3: заявление ↔ обоснование сверяются по извлечённым суммам; анкета — отдельное замечание
         Fixture facts = Fixture.pkg().application(application()).doc(Docs.APPLICATION, "requestedAmount", "400.00")
                 .doc(Docs.COST_JUSTIFICATION, "requestedAmount", "400.00");
-        assertThat(result(facts, "REQUEST_MATCH").status()).isEqualTo(RuleStatus.FAILED);
+        assertThat(result(facts, "REQUEST_MATCH").status()).isEqualTo(RuleStatus.PASSED);
+        assertThat(result(facts, "APPLICATION_REQUEST_MATCH").status()).isEqualTo(RuleStatus.WARNING);
         assertThat(result(facts, "APPLICATION_REQUEST_MATCH").expected()).isEqualTo("500.00");
         assertThat(result(facts, "APPLICATION_REQUEST_MATCH").actual()).isEqualTo("400.00");
         assertThat(result(Fixture.pkg().application(application()).doc(Docs.COST_JUSTIFICATION,
-                "requestedAmount", "500.01"), "REQUEST_MATCH").status()).isEqualTo(RuleStatus.PASSED);
+                "requestedAmount", "500.01"), "REQUEST_MATCH").status()).isEqualTo(RuleStatus.DATA_MISSING);
+        assertThat(result(Fixture.pkg().doc(Docs.APPLICATION, "requestedAmount", "400.00"),
+                "APPLICATION_REQUEST_MATCH").status()).isEqualTo(RuleStatus.NOT_APPLICABLE);
     }
 
     @Test
@@ -157,7 +165,7 @@ class Backend3RulesTest {
         assertThat(result(absent, "PDF_SIGNATURE").status()).isEqualTo(RuleStatus.PASSED);
         assertThat(result(absent, "PDF_SIGNATURE").actual()).contains("ABSENT");
         assertThat(result(Fixture.pkg().doc(Docs.APPLICATION, "inn", Fixture.APPLICANT), "PDF_SIGNATURE").status())
-                .isEqualTo(RuleStatus.DATA_MISSING);
+                .isEqualTo(RuleStatus.PASSED);
         ObjectNode params = defaults();
         params.path("rules").forEach(rule -> {
             if ("PDF_SIGNATURE".equals(rule.path("code").asText())) {

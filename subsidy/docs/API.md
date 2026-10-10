@@ -149,7 +149,8 @@
 - Приём и замена: форматы по FR-03 (PDF, JPG, PNG, TIFF, HEIC, DOCX, XLSX, ZIP) определяются по байтам, независимо от имени и Content-Type.
 - Текущая версия файла содержит `electronicSignature` (для PDF; у остальных форматов UNKNOWN/NOT_INSPECTED):{status,present,reason,cryptographicallyVerified}`: PRESENT/ABSENT/UNKNOWN, present=true/false/null. Проверяется структура PDF, а не криптографическая действительность; cryptographicallyVerified всегда false. Для старых версий UNKNOWN/NOT_INSPECTED.
 - Изменение заявки публикует `PackageApplicationChanged` через outbox; rules хранит новую ревизию и запускает перепроверку. `PackageChecked.applicationRevision` не позволяет старой проверке подтвердить новую заявку.
-# Контракт Backend 3 (B3-1…B3-6)
+
+## Контракт Backend 3 (B3-1…B3-6)
 
 Заявка дополняется необязательным `conditions`: объект `код условия → boolean`, относящийся только к этому проекту.
 Отсутствующий ключ означает неизвестную применимость, `false` — документ не требуется, `true` — применяется;

@@ -51,6 +51,10 @@ public final class EqualSumOp implements DeclarativeOp {
     public RuleResult apply(RuleSpec spec, Scope scope) {
         BigDecimal tolerance = Optional.ofNullable(Params.decimal(spec, TOLERANCE)).orElse(Money.TOLERANCE);
         List<Operand[]> pairs = pairs(spec);
+        boolean noApplication = scope.facts().application() == null || scope.facts().application().isNull();
+        if (noApplication && pairs.stream().allMatch(pair -> pair[0].usesApplicant() || pair[1].usesApplicant())) {
+            return spec.notApplicable("Анкета заявки не заполнена — сверка с ней не выполняется");
+        }
         for (Operand[] pair : pairs) {
             Optional<Operand.Value> left = pair[0].resolve(scope);
             Optional<Operand.Value> right = pair[1].resolve(scope);
