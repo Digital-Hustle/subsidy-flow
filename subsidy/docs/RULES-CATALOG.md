@@ -27,6 +27,7 @@
 | `NOT_EMPTY` | поля не пустые | `types`, `fields` |
 | `APPLICATION_MATCH` | поле заявки совпадает с относящимися к заявителю полями | `applicationPath`, `fields: {ВИД: [поля]}`, `normalize`, `whenPath/whenValue` |
 | `SIGNATURE_PRESENCE` | наличие ЭП PDF и отдельно обязательность | `types`, `required` |
+| `VISUAL_MARK` | видимая подпись/печать по изображению страницы (vision-модель docproc, B2-2) | `types`, `field` (`visualSignature`/`visualStamp`), `acceptElectronic?` |
 | `RANGE` | число в диапазоне | `operand`, `min?`, `max?` |
 
 Операнд — `ВИД.поле` или разность `ВИД.a - ВИД.b`; `*` в `types` — все виды пакета. Нет данных для проверки — правило в статусе `DATA_MISSING` с причиной, а не «пройдено».
@@ -49,6 +50,7 @@
 - `OWN_FUNDS_SHARE`: только `COST_JUSTIFICATION.ownFunds` либо `totalCost-requestedAmount` из того же обоснования.
   Данные заявления не подставляются в расчёт доли. `REQUEST_MATCH` никогда не заменяется равенством общих расходов.
   Денежный операнд `APPLICANT.requestedAmount` ссылается на сохранённую форму заявки и используется только в `APPLICATION_REQUEST_MATCH` (`WARNING`): анкета не подменяет извлечённые суммы в `REQUEST_MATCH` и `OWN_FUNDS_SHARE`.
+- `VISUAL_SIGNATURE` (`VISUAL_MARK`, WARNING): подпись видна на заявлении, гарантийном письме, согласии ПД. Нет подписи → замечание; не определено (DOCX/XLSX, нечитаемо, модель недоступна) → тоже замечание «проверьте оригинал», пакет не уходит в ручную проверку; ЭП в PDF засчитывается. Специалист подтверждает правкой поля `visualSignature`.
 - Условия чек-листа читаются из `application.conditions`; настройки программы описывают условие, но не его выполнение проектом.
 - `SIGNATURE_PRESENCE`: информационное правило по умолчанию (`required=false`); обязательность и серьёзность нарушения
   задаются администратором для конкретных видов. При `required=false` результат справочный (`PASSED` с признаком в тексте); при `required=true` `UNKNOWN` даёт `DATA_MISSING`, `ABSENT` — нарушение;

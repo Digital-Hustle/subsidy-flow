@@ -7,7 +7,7 @@ S={"type":"string"}
 NS={"type":["string","null"]}
 STAGES=["QUEUED","EXTRACTING_TEXT","CLASSIFYING","EXTRACTING_FIELDS","VALIDATING","PARSED","NEEDS_REVIEW","UNREADABLE","WAITING_MODEL","FAILED","REMOVED"]
 FILE={"fileId":U,"packageId":U,"version":I}
-MARK={"type":"object","required":["status","source"],"properties":{"status":{"enum":["DETECTED","NOT_DETECTED","UNDETERMINED"]},"source":{"enum":["TEXT","IMAGE","TEXT_AND_IMAGE"]},"confidence":{"type":["number","null"],"minimum":0,"maximum":1}},"additionalProperties":False}
+MARK={"type":"object","required":["status"],"properties":{"status":{"enum":["DETECTED","NOT_DETECTED","UNDETERMINED"]},"source":{"enum":["IMAGE",None]},"confidence":{"type":["number","null"],"minimum":0,"maximum":1}},"additionalProperties":False}
 E={
  "package.package.v1":{
   "PackageCreated":({"packageId":U,"orgId":U,"inn":{"type":"string","pattern":"^(\\d{10}|\\d{12})$"},"programCode":S,"createdBy":S},None,"package: пакет создан (POST /packages)"),

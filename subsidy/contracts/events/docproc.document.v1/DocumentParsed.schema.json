@@ -135,8 +135,7 @@
         "signature": {
           "type": "object",
           "required": [
-            "status",
-            "source"
+            "status"
           ],
           "properties": {
             "status": {
@@ -148,9 +147,8 @@
             },
             "source": {
               "enum": [
-                "TEXT",
                 "IMAGE",
-                "TEXT_AND_IMAGE"
+                null
               ]
             },
             "confidence": {
@@ -167,8 +165,7 @@
         "stamp": {
           "type": "object",
           "required": [
-            "status",
-            "source"
+            "status"
           ],
           "properties": {
             "status": {
@@ -180,9 +177,8 @@
             },
             "source": {
               "enum": [
-                "TEXT",
                 "IMAGE",
-                "TEXT_AND_IMAGE"
+                null
               ]
             },
             "confidence": {

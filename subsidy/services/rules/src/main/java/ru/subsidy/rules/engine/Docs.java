@@ -56,6 +56,8 @@ public final class Docs {
             Map.entry("ownFunds", "собственные средства"),
             Map.entry("date", "дата"),
             Map.entry("signerName", "подписант"),
+            Map.entry("visualSignature", "подпись (визуально)"),
+            Map.entry("visualStamp", "печать (визуально)"),
             Map.entry("fullName", "ФИО"),
             Map.entry("passport", "паспортные данные"),
             Map.entry("number", "номер"),

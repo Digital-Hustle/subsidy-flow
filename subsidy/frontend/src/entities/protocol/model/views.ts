@@ -23,6 +23,7 @@ const RULE_TITLE: Record<string, string> = {
   REQUEST_MATCH: "Сумма в заявлении совпадает с обоснованием",
   CADASTRAL_FORMAT: "Кадастровый номер в принятом формате",
   PRESENTATION_NOT_EMPTY: "Презентация не пустая",
+  VISUAL_SIGNATURE: "Подпись видна на документе",
 };
 export const ruleTitle = (code: string) => RULE_TITLE[code] ?? code;
 

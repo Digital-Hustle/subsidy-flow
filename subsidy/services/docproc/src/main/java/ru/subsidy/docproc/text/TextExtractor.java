@@ -71,6 +71,16 @@ public class TextExtractor {
     }
 
     /**
+     * Можно ли отрисовать страницы как изображения (PDF и сканы; DOCX/XLSX — нет).
+     *
+     * @param mime тип
+     * @return true для PDF и image/*
+     */
+    public static boolean renderable(String mime) {
+        return PDF.equals(mime) || mime != null && mime.startsWith("image/");
+    }
+
+    /**
      * Картинки страниц для vision-модели (PNG).
      *
      * @param content файл

@@ -175,7 +175,7 @@ class PipelineIntegrationTest extends AbstractIntegrationTest {
                         .path("documentId").asText() + "/result").with(authentication(user("SPECIALIST"))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.marks.signature.status").value("DETECTED"))
-                .andExpect(jsonPath("$.marks.signature.source").value("TEXT"))
+                .andExpect(jsonPath("$.marks.signature.source").value("IMAGE"))
                 .andExpect(jsonPath("$.marks.stamp.status").value("UNDETERMINED"))
                 .andExpect(jsonPath("$.pageQuality").doesNotExist());
         assertThat(String.join("\n", types)).contains("\"marks\"").contains("\"signature\"");
@@ -296,6 +296,10 @@ class PipelineIntegrationTest extends AbstractIntegrationTest {
                         throw new ModelUnavailableException("down", null);
                     }
                     ObjectNode root = json.createObjectNode();
+                    if ("DETECTING_MARKS".equals(rq.stage())) {
+                        assertThat(rq.images()).as("признаки — только по изображению страницы").isNotEmpty();
+                        return new LlmResult(marks(json), "fake", "fake-vision", 1, null, null, 1);
+                    }
                     if ("CLASSIFYING".equals(rq.stage())) {
                         root.putArray("segments")
                                 .add(segment(json, 1, 1, "APPLICATION"))
@@ -309,7 +313,6 @@ class PipelineIntegrationTest extends AbstractIntegrationTest {
                                 .put("requestedAmount", "1 500 000 руб. 00 коп.").put("date", "«1» марта 2026 г.");
                         root.putObject("confidence").put("inn", 0.95).put("requestedAmount", 0.95).put("date", 0.9);
                     }
-                    root.set("marks", marks(json));
                     return new LlmResult(root, "fake", "fake-model", 1, null, null, 1);
                 }
 
@@ -330,7 +333,7 @@ class PipelineIntegrationTest extends AbstractIntegrationTest {
             marks.putObject("signature").put("status", "DETECTED").put("confidence", 0.9)
                     .put("basis", "росчерк под подписью");
             marks.putObject("stamp").put("status", "UNDETERMINED").put("confidence", 0.0)
-                    .put("basis", "по тексту не определить");
+                    .put("basis", "оттиск не различим");
             return marks;
         }
     }
