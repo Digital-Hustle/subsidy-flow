@@ -5,6 +5,9 @@ import { AnimatePresence, motion } from "motion/react";
 import { AlertTriangle, ChevronRight, Inbox, Loader2, Search, UserRound } from "lucide-react";
 import { AppStatusBadge, dateTimeRu, reviewApi, reviewKeys, statusView, waitingRu, type QueueFilter } from "@/entities/application";
 import { TakeNextButton, useTakeNext } from "@/features/take-next";
+import { CreatePackageButton } from "@/features/create-package";
+import { useProgramName } from "@/entities/protocol";
+import { can, useSession } from "@/entities/session";
 import { AnimatedNumber, Avatar, Button, Card, CardHeader, CardTitle, EmptyState, Input, LoadMore, PageHeader, RowsSkeleton, Segmented, Select, Status } from "@/shared/ui";
 import { errorText } from "@/shared/api";
 import { routes } from "@/shared/const/router";
@@ -61,8 +64,10 @@ const QueueAside = ({ status, onStatus }: { status: string; onStatus: (v: string
 
 /** Очередь заявок — фильтры в URL, курсоры, «взять следующую», обновление без перезагрузки. */
 export const QueuePage = () => {
+  const programName = useProgramName();
   const [sp, setSp] = useSearchParams();
   const next = useTakeNext();
+  const canCreate = can(useSession().roles, "act");
   const text0 = sp.get("q") ?? "";
   const inn = /^\d{10}(\d{2})?$/.test(text0) ? text0 : "";
   const f: QueueFilter = { status: sp.get("status") ?? "", q: text0, inn, assignee: sp.get("assignee") ?? "", sort: sp.get("sort") ?? "waiting" };
@@ -87,7 +92,7 @@ export const QueuePage = () => {
 
   return (
     <>
-      <PageHeader title="Очередь заявок" sub="Сначала — дольше всех ждущие. Ошибки и предупреждения протокола видны сразу" actions={<TakeNextButton />} />
+      <PageHeader title="Очередь заявок" sub="Сначала — дольше всех ждущие. Ошибки и предупреждения протокола видны сразу" actions={<div className="flex flex-wrap gap-2">{canCreate && <CreatePackageButton />}<TakeNextButton /></div>} />
       <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:gap-6">
         <div className="min-w-0 flex-1">
       <div className="mb-4 flex flex-col gap-2 md:flex-row md:flex-wrap md:items-center">
@@ -114,7 +119,7 @@ export const QueuePage = () => {
                     <Avatar name={it.org?.name || it.applicantName || "?"} className="hidden size-10 sm:flex" />
                     <div className="min-w-0 flex-1">
                       <div className="truncate font-medium">{it.org?.name || it.applicantName || (it.org?.inn ? `ИНН ${it.org.inn}` : "Организация")}</div>
-                      <div className="truncate text-xs text-muted-foreground">№ {it.id.slice(0, 8)}{it.org?.inn ? ` · ИНН ${it.org.inn}` : ""}{it.program ? ` · ${it.program}` : ""} · {it.waitingSeconds != null ? `ждёт ${waitingRu(it.waitingSeconds)}` : `обновлена ${dateTimeRu(it.updatedAt)}`}</div>
+                      <div className="truncate text-xs text-muted-foreground">№ {it.id.slice(0, 8)}{it.org?.inn ? ` · ИНН ${it.org.inn}` : ""}{it.program ? ` · ${programName(it.program)}` : ""} · {it.waitingSeconds != null ? `ждёт ${waitingRu(it.waitingSeconds)}` : `обновлена ${dateTimeRu(it.updatedAt)}`}</div>
                     </div>
                     <div className="hidden flex-wrap items-center justify-end gap-1.5 md:flex">
                       {it.completeness != null && <Status tone={it.completeness >= 100 ? "success" : "neutral"}>комплект {it.completeness}%</Status>}
