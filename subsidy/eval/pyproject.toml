@@ -1,0 +1,24 @@
+[project]
+name = "subsidy-eval"
+version = "0.1.0"
+description = "Субсидии: синтетические пакеты и прогон качества через публичный API (docs/EVAL.md)"
+requires-python = ">=3.12"
+dependencies = ["reportlab>=4.2"]
+
+[dependency-groups]
+dev = ["ruff>=0.7", "pytest>=8.3", "pdfplumber>=0.11"]
+
+[tool.uv]
+package = false
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "N", "SIM", "RUF"]
+ignore = ["RUF001", "RUF002", "RUF003"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
