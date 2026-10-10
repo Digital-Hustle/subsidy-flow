@@ -7,10 +7,9 @@ import { protocolApi, protocolKeys } from "@/entities/protocol";
 import { ApiError, errorText } from "@/shared/api";
 import { Button, Dialog, Field, Input, Select } from "@/shared/ui";
 import { routes } from "@/shared/const/router";
+import { innError as innHint, innValid } from "@/shared/lib";
 
-const INN_RE = /^\d{10}$|^\d{12}$/;
-
-/** Заявка от специалиста: документы принесли не через кабинет. ИНН (контрольную сумму проверяет сервер) + программа → пакет. */
+/** Заявка от специалиста: документы принесли не через кабинет. ИНН (контрольные цифры — сразу при вводе и на сервере) + программа → пакет. */
 export const CreatePackageButton = () => {
   const [open, setOpen] = useState(false);
   const [inn, setInn] = useState("");
@@ -25,14 +24,15 @@ export const CreatePackageButton = () => {
     onSuccess: (p) => { void qc.invalidateQueries({ queryKey: reviewKeys.queueAll }); setOpen(false); nav(routes.operatorApplication(p.packageId)); },
   });
   const innError = create.error instanceof ApiError && create.error.code === "INN_INVALID" ? errorText(create.error) : null;
-  const valid = INN_RE.test(inn) && !!chosen;
+  const valid = innValid(inn) && !!chosen;
+  const typed = inn.length >= 10 ? innHint(inn) : null;
   return (
     <>
       <Button variant="secondary" onClick={() => setOpen(true)}><FilePlus2 />Новая заявка</Button>
       <Dialog open={open} onClose={() => setOpen(false)} title="Новая заявка" description="Документы организации принесли не через кабинет заявителя — загрузите их сами"
         footer={<Button disabled={!valid || create.isPending} onClick={() => create.mutate()}>{create.isPending ? "Создаём…" : "Создать"}</Button>}>
         <form className="flex flex-col gap-4" onSubmit={(e) => { e.preventDefault(); if (valid) create.mutate(); }}>
-          <Field label="ИНН организации" hint="10 цифр для юрлица, 12 — для ИП" error={innError}>
+          <Field label="ИНН организации" hint="10 цифр для юрлица, 12 — для ИП" error={typed ?? innError}>
             <Input inputMode="numeric" autoFocus value={inn} maxLength={12} onChange={(e) => setInn(e.target.value.replace(/\D/g, ""))} placeholder="7707083893" />
           </Field>
           <Field label="Программа поддержки">

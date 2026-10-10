@@ -7,7 +7,7 @@ import { AppStatusBadge, dateRuFull, dateTimeRu, decisionView, moneyRu, reviewAp
 import { StageBadge, confidenceTone, percent, reasonView, typeTitle } from "@/entities/document";
 import { protocolApi, protocolKeys, useProgramName } from "@/entities/protocol";
 import { can, useSession } from "@/entities/session";
-import { AssistantChat } from "@/features/ask-assistant";
+import { AssistantChat, AssistantFab } from "@/features/ask-assistant";
 import { DecisionDialog } from "@/features/decide-application";
 import { RequestDialog } from "@/features/request-resubmit";
 import { DocumentActions, useAssign, useRebuild } from "@/features/review-document";
@@ -227,6 +227,7 @@ export const ApplicationPage = () => {
           </div>
         </div>
       )}
+      {can(s.roles, "assistant") && tab !== "assistant" && <AssistantFab packageId={id} onExpand={() => setTab("assistant")} />}
       <DecisionDialog packageId={id} open={decide} onClose={() => setDecide(false)} />
       {ask && <RequestDialog packageId={id} docs={docs} missing={(proto.data?.completeness?.missing ?? []).map((m) => ({ type: m.type, title: titleOf(m.type) }))} open={askOpen} onClose={() => setAskOpen(false)} onClosed={() => setAsk(false)} />}
     </>

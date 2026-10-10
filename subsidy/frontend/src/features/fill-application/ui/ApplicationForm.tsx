@@ -2,7 +2,7 @@ import { useState } from "react";
 import { ArrowRight } from "lucide-react";
 import { ADDRESS_PURPOSE, RIGHT_TYPE, type ApplicationData } from "@/entities/application";
 import { Button, DatePicker, Field, Input, Segmented, Switch, Textarea } from "@/shared/ui";
-import { todayKey } from "@/shared/lib";
+import { innError, ogrnError, todayKey } from "@/shared/lib";
 
 type Form = {
   orgInn: string; orgName: string; ogrn: string; address: string; purpose: string; project: string; amount: string; date: string;
@@ -10,13 +10,6 @@ type Form = {
 };
 
 const digits = (s: string) => s.replace(/\D/g, "");
-/** Контрольная сумма ИНН юрлица (10 цифр) — подсказка до отправки; решает сервер. */
-const innOk = (v: string) => {
-  if (!/^\d{10}$/.test(v)) return false;
-  const w = [2, 4, 10, 3, 5, 9, 4, 6, 8];
-  return (w.reduce((s, k, i) => s + k * Number(v[i]), 0) % 11) % 10 === Number(v[9]);
-};
-const ogrnOk = (v: string) => /^\d{13}$/.test(v) && Number(BigInt(v.slice(0, 12)) % 11n % 10n) === Number(v[12]);
 /** «1 500 000,5» → "1500000.50": деньги уходят строкой с двумя знаками. */
 const money = (s: string) => {
   const t = s.replace(/[\s\u00a0₽]/g, "").replace(",", ".");
@@ -54,8 +47,8 @@ export const ApplicationForm = ({ initial, onSave, saving, submitLabel = "Сох
   const inn = digits(f.orgInn);
   const ogrn = digits(f.ogrn);
   const err = {
-    orgInn: inn && !innOk(inn) ? "ИНН организации — 10 цифр, проверьте контрольную цифру" : null,
-    ogrn: ogrn && !ogrnOk(ogrn) ? "ОГРН — 13 цифр, проверьте контрольную цифру" : null,
+    orgInn: innError(inn),
+    ogrn: ogrnError(ogrn),
     amount: f.amount && !money(f.amount) ? "Сумма в рублях, например 1 500 000 или 1500000,50" : null,
   };
   const server = (field: string) => (serverError?.field && serverError.field.endsWith(field) ? serverError.text : null);
@@ -67,8 +60,8 @@ export const ApplicationForm = ({ initial, onSave, saving, submitLabel = "Сох
         <legend className="mb-3 text-base font-semibold">Организация</legend>
         <Field label="Полное наименование" error={server("orgName")}><Input value={f.orgName} onChange={(e) => set("orgName")(e.target.value)} placeholder="ООО «Ромашка»" maxLength={300} /></Field>
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="ИНН" error={show("orgInn") ?? server("orgInn")}><Input value={f.orgInn} onChange={(e) => set("orgInn")(e.target.value)} inputMode="numeric" maxLength={12} placeholder="10 цифр" aria-invalid={!!show("orgInn")} /></Field>
-          <Field label="ОГРН" error={show("ogrn") ?? server("ogrn")}><Input value={f.ogrn} onChange={(e) => set("ogrn")(e.target.value)} inputMode="numeric" maxLength={15} placeholder="13 цифр" aria-invalid={!!show("ogrn")} /></Field>
+          <Field label="ИНН" error={show("orgInn") ?? server("orgInn")}><Input value={f.orgInn} onChange={(e) => set("orgInn")(e.target.value)} inputMode="numeric" maxLength={12} placeholder="10 или 12 цифр" aria-invalid={!!show("orgInn")} /></Field>
+          <Field label="ОГРН" error={show("ogrn") ?? server("ogrn")}><Input value={f.ogrn} onChange={(e) => set("ogrn")(e.target.value)} inputMode="numeric" maxLength={15} placeholder="13 или 15 цифр" aria-invalid={!!show("ogrn")} /></Field>
         </div>
         <Field label="Адрес" error={server("address")}>
           <Input value={f.address} onChange={(e) => set("address")(e.target.value)} placeholder="Город, улица, дом" maxLength={500} />

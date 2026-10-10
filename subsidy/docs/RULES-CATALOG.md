@@ -28,6 +28,7 @@
 | `APPLICATION_MATCH` | поле заявки совпадает с относящимися к заявителю полями | `applicationPath`, `fields: {ВИД: [поля]}`, `normalize`, `whenPath/whenValue` |
 | `SIGNATURE_PRESENCE` | наличие ЭП PDF и отдельно обязательность | `types`, `required` |
 | `VISUAL_MARK` | видимая подпись/печать по изображению страницы (vision-модель docproc, B2-2) | `types`, `field` (`visualSignature`/`visualStamp`), `acceptElectronic?` |
+| `PATTERN` + `checksum` | контрольные разряды ИНН 10/12 и ОГРН 13/ОГРНИП 15 (правила `INN_CHECKSUM`, `OGRN_CHECKSUM`, WARNING) | `checksum`: `inn` \| `ogrn` |
 | `RANGE` | число в диапазоне | `operand`, `min?`, `max?` |
 
 Операнд — `ВИД.поле` или разность `ВИД.a - ВИД.b`; `*` в `types` — все виды пакета. Нет данных для проверки — правило в статусе `DATA_MISSING` с причиной, а не «пройдено».

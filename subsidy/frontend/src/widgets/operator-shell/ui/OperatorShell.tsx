@@ -29,7 +29,7 @@ export const OperatorShell = () => {
   return (
     <div className="relative isolate min-h-svh text-foreground">
       <HeaderBar>
-        <Link to={routes.operator} className="shrink-0 rounded-md px-1.5 outline-none focus-visible:ring-2 focus-visible:ring-ring"><Logo sub="специалист" /></Link>
+        <Link to={routes.home} aria-label="На главную" className="shrink-0 rounded-md px-1.5 outline-none focus-visible:ring-2 focus-visible:ring-ring"><Logo sub="специалист" /></Link>
         <NavTrack items={items.map(({ to, label, end }) => ({ to, label, end }))} className="ml-auto hidden md:block xl:ml-6" />
         <div className="ml-auto flex shrink-0 items-center gap-1.5">
           {s.demoStand && <Status tone="warning" className="hidden sm:inline-flex"><FlaskConical className="size-3.5" />демо-стенд</Status>}

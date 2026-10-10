@@ -73,7 +73,7 @@ export const HomePage = () => {
   return (
     <div className="relative isolate min-h-svh overflow-x-clip">
       <HeaderBar inner="max-w-6xl">
-        <Logo className="px-1.5" />
+        <Link to={routes.home} aria-label="На главную" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} className="shrink-0 rounded-md px-1.5 outline-none focus-visible:ring-2 focus-visible:ring-ring"><Logo /></Link>
         <nav aria-label="Разделы" className="ml-auto hidden items-center gap-1 md:flex">
           {[{ to: routes.apply, label: "Заявителю" }, { to: routes.operator, label: "Специалисту" }, { to: routes.operatorMetrics, label: "Метрики" }].map(({ to, label }) => (
             <Link key={label} to={to} className="flex h-10 items-center rounded-sm px-4 text-sm font-medium text-muted-foreground outline-none transition-colors duration-fast hover:bg-surface hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring">{label}</Link>
