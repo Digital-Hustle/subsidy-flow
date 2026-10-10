@@ -120,7 +120,8 @@ public class PipelineRunner {
         pagesOf(job, content).ifPresent(pages -> {
             if (pages.stream().noneMatch(PageText::hasText) && !props.visionFallback()) {
                 String reason = quality.unreadableReason(pages);
-                finish(job, Stage.UNREADABLE, reason == null ? "TEXT_NOT_FOUND" : reason, UNREADABLE_EVENT);
+                finish(job, Stage.UNREADABLE, reason == null ? PageQualityAssessor.TEXT_NOT_FOUND : reason,
+                        UNREADABLE_EVENT);
             } else {
                 segmentsOf(job, content, pages).ifPresent(docs -> parseAll(job, content, pages, docs));
             }
@@ -150,8 +151,10 @@ public class PipelineRunner {
     }
 
     private void parseAll(Job job, FileBytes content, List<PageText> pages, List<DocSegment> docs) {
-        boolean partial = quality.partial(pages);
         for (DocSegment doc : docs) {
+            Segment seg = doc.segment();
+            boolean partial = quality.partial(pages.stream()
+                    .filter(page -> page.page() >= seg.fromPage() && page.page() <= seg.toPage()).toList());
             Optional<Pending> pending = store.pending(doc.documentId());
             if (pending.isPresent() || !store.isParsed(doc.documentId())) {
                 parse(job, content, pages, doc, pending.orElse(null), partial);

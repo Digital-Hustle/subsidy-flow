@@ -23,25 +23,25 @@ class PageQualityAssessorTest {
     @Test
     void unreadable_blurHasCause() {
         PageText page = scan("", new PageQuality(40.0, 0.8, 0.0, false, 0.9));
-        assertThat(assessor.unreadableReason(List.of(page))).contains("размыт");
+        assertThat(assessor.unreadableReason(List.of(page))).isEqualTo(PageQualityAssessor.IMAGE_BLURRY);
     }
 
     @Test
     void unreadable_darkHasCause() {
         PageText page = scan("", new PageQuality(300.0, 0.10, 0.0, false, 0.9));
-        assertThat(assessor.unreadableReason(List.of(page))).contains("темно");
+        assertThat(assessor.unreadableReason(List.of(page))).isEqualTo(PageQualityAssessor.IMAGE_TOO_DARK);
     }
 
     @Test
     void unreadable_cutOffHasCause() {
         PageText page = scan("", new PageQuality(300.0, 0.8, 0.0, true, 0.9));
-        assertThat(assessor.unreadableReason(List.of(page))).contains("обрезан");
+        assertThat(assessor.unreadableReason(List.of(page))).isEqualTo(PageQualityAssessor.IMAGE_CUT_OFF);
     }
 
     @Test
     void unreadable_noMetricsGivesNoText() {
         PageText page = new PageText(1, "", PageText.NONE);
-        assertThat(assessor.unreadableReason(List.of(page))).isEqualTo("нет текста");
+        assertThat(assessor.unreadableReason(List.of(page))).isEqualTo(PageQualityAssessor.TEXT_NOT_FOUND);
     }
 
     @Test
@@ -71,8 +71,20 @@ class PageQualityAssessorTest {
     }
 
     @Test
-    void partial_glare() {
-        PageText page = scan("Заявление", new PageQuality(300.0, 0.8, 0.5, false, 0.95));
+    void unreadable_glareHasCause() {
+        PageText page = scan("", new PageQuality(300.0, 0.8, 0.5, false, 0.9));
+        assertThat(assessor.unreadableReason(List.of(page))).isEqualTo(PageQualityAssessor.IMAGE_GLARE);
+    }
+
+    @Test
+    void glareOrBlurWithConfidentOcr_notPartial() {
+        PageText page = scan("Заявление", new PageQuality(40.0, 0.8, 0.5, false, 0.95));
+        assertThat(assessor.partial(List.of(page))).isFalse();
+    }
+
+    @Test
+    void partial_cutOffText() {
+        PageText page = scan("Заявление", new PageQuality(300.0, 0.8, 0.0, true, 0.95));
         assertThat(assessor.partial(List.of(page))).isTrue();
     }
 
