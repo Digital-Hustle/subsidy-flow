@@ -2,13 +2,13 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Bot, Send, ShieldAlert } from "lucide-react";
 import { errorText } from "@/shared/api";
-import { Button, Card, CardContent, CardHeader, CardTitle, Spinner, Status, Textarea } from "@/shared/ui";
+import { Button, Card, Spinner, Status, Textarea } from "@/shared/ui";
 import { cn } from "@/shared/lib";
 import { assistantApi, assistantKeys, type Source } from "../api/assistantApi";
 
 const sourceText = (s: Source) => (typeof s === "string" ? s : Object.values(s).filter((v) => v !== null && v !== "").join(" · "));
 
-/** FE-SP-10: чат помощника по пакету. Числа в ответе проверяет сервер (validator) — клиент только показывает итог. */
+/** Помощник по заявке. Числа в ответе проверяет сервер (validator) — клиент только показывает итог. */
 export const AssistantChat = ({ packageId }: { packageId: string }) => {
   const qc = useQueryClient();
   const [q, setQ] = useState("");
@@ -20,13 +20,13 @@ export const AssistantChat = ({ packageId }: { packageId: string }) => {
   });
   const send = (text: string) => { const t = text.trim(); if (t && !ask.isPending) ask.mutate(t); };
   const items = messages.data?.items ?? [];
+  const hintItems = hints.data?.items ?? [];
 
   return (
-    <Card>
-      <CardHeader><CardTitle className="flex items-center gap-2"><Bot className="size-5" />Помощник по пакету</CardTitle></CardHeader>
-      <CardContent className="flex flex-col gap-3">
+    <Card className="p-4">
+      <div className="flex flex-col gap-3">
         {messages.isPending ? <Spinner /> : !items.length ? (
-          <p className="text-sm text-muted-foreground">Спросите, чего не хватает в пакете или почему правило не пройдено. Ответ строится только по протоколу и данным документов.</p>
+          <p className="flex items-start gap-2 text-sm text-muted-foreground"><Bot className="mt-0.5 size-4 shrink-0" />Спросите, чего не хватает в заявке или почему правило не пройдено. Ответ строится только по протоколу и данным документов, числа сверяет сервер.</p>
         ) : (
           <ul className="flex max-h-96 flex-col gap-2 overflow-y-auto">
             {items.map((m) => (
@@ -40,17 +40,17 @@ export const AssistantChat = ({ packageId }: { packageId: string }) => {
         )}
         {ask.isPending && <div className="flex items-center gap-2 text-sm text-muted-foreground"><Spinner className="size-4" />Помощник смотрит протокол…</div>}
         {ask.isError && <p className="text-sm text-danger">{errorText(ask.error)}</p>}
-        {!!hints.data?.items.length && (
+        {hintItems.length > 0 && (
           <div className="flex flex-wrap gap-2">
-            {hints.data.items.map((h) => <Button key={h} size="sm" variant="secondary" disabled={ask.isPending} onClick={() => send(h)}>{h}</Button>)}
+            {hintItems.map((h) => <Button key={h} size="sm" variant="secondary" disabled={ask.isPending} onClick={() => send(h)}>{h}</Button>)}
           </div>
         )}
         <form className="flex items-end gap-2" onSubmit={(e) => { e.preventDefault(); send(q); }}>
-          <Textarea rows={2} value={q} maxLength={1000} onChange={(e) => setQ(e.target.value)} placeholder="Вопрос по пакету" aria-label="Вопрос помощнику"
+          <Textarea rows={2} value={q} maxLength={1000} onChange={(e) => setQ(e.target.value)} placeholder="Вопрос по заявке" aria-label="Вопрос помощнику"
             onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(q); } }} />
           <Button type="submit" size="icon" aria-label="Отправить" disabled={!q.trim() || ask.isPending}><Send /></Button>
         </form>
-      </CardContent>
+      </div>
     </Card>
   );
 };
