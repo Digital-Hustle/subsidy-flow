@@ -22,3 +22,4 @@
 | DP-16 | NFR-07 | Метрики стадий и уверенности | B2 | done #80 |
 | DP-17 | FR-30 | Схемы извлечения для сверок: адреса с назначением, правообладатель/арендатор, кадастр; гарант ≠ заявитель | B2 | done #4 |
 | DP-18 | FR-26 | Качество сканов: частично читаемый → NEEDS_REVIEW (`PARTIAL_SCAN`), нечитаемый → UNREADABLE с кодом причины | B2 | review #10 |
+| DP-19 | FR-33 | Признаки подписи/печати (DETECTED/NOT_DETECTED/UNDETERMINED, источник, уверенность) + marks/pageQuality в parse_results, DocumentParsed, API (B2-2/B2-4) | B2 | review #13 |

@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -27,6 +28,7 @@ import ru.subsidy.docproc.queue.Job;
 import ru.subsidy.docproc.queue.JobQueue;
 import ru.subsidy.docproc.queue.Stage;
 import ru.subsidy.docproc.text.PackageClient;
+import ru.subsidy.docproc.text.PageQuality;
 import ru.subsidy.docproc.text.PageText;
 import ru.subsidy.docproc.text.TextExtractor;
 import ru.subsidy.llm.api.ModelInvalidOutputException;
@@ -179,8 +181,18 @@ public class PipelineRunner {
                 seg.fromPage(), seg.toPage(), type.code(), confidence, manual ? null : seg.evidence(),
                 manual ? SPECIALIST : PipelineStore.MODEL, fields, extraction.model(),
                 Prompts.SEGMENT + "+" + Prompts.EXTRACT, type.version(), reason != null, reason,
-                manual ? pending.reason() : null, manual ? pending.by() : null));
+                manual ? pending.reason() : null, manual ? pending.by() : null,
+                extraction.marks(), pageQuality(pages, seg)));
         metrics.documentParsed(type.code(), confidence, manual ? SPECIALIST : PipelineStore.MODEL, reason);
+    }
+
+    private static List<PageQuality> pageQuality(List<PageText> pages, Segment seg) {
+        List<PageQuality> result = pages.stream()
+                .filter(page -> page.page() >= seg.fromPage() && page.page() <= seg.toPage())
+                .map(PageText::quality)
+                .filter(Objects::nonNull)
+                .toList();
+        return result.isEmpty() ? null : result;
     }
 
     private String docText(List<PageText> pages, Segment seg) {

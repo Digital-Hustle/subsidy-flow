@@ -24,11 +24,13 @@ import com.github.f4b6a3.uuid.UuidCreator;
 import ru.subsidy.common.event.Topics;
 import ru.subsidy.common.outbox.OutboxWriter;
 import ru.subsidy.docproc.classify.Segment;
+import ru.subsidy.docproc.extract.DocumentMarks;
 import ru.subsidy.docproc.jooq.Tables;
 import ru.subsidy.docproc.normalize.FieldValue;
 import ru.subsidy.docproc.queue.Job;
 import ru.subsidy.docproc.queue.JobQueue;
 import ru.subsidy.docproc.queue.Stage;
+import ru.subsidy.docproc.text.PageQuality;
 import ru.subsidy.docproc.text.PageText;
 
 /**
@@ -208,6 +210,9 @@ public class PipelineStore {
                 .set(Tables.PARSE_RESULTS.SCHEMA_VERSION, result.schemaVersion())
                 .set(Tables.PARSE_RESULTS.REASON, result.reason())
                 .set(Tables.PARSE_RESULTS.CREATED_BY, result.createdBy())
+                .set(Tables.PARSE_RESULTS.MARKS, result.marks() == null ? null : JSONB.valueOf(write(result.marks())))
+                .set(Tables.PARSE_RESULTS.PAGE_QUALITY,
+                        result.pageQuality() == null ? null : JSONB.valueOf(write(result.pageQuality())))
                 .set(Tables.PARSE_RESULTS.CREATED_AT, now)
                 .execute();
         dsl.update(Tables.DOCUMENTS).set(Tables.DOCUMENTS.STAGE, stage)
@@ -231,6 +236,12 @@ public class PipelineStore {
         payload.put(REASON, result.reasonCode());
         payload.put("resultVersion", version);
         payload.put("fields", result.fields().stream().map(PipelineStore::fieldPayload).toList());
+        if (result.marks() != null) {
+            payload.put("marks", json.valueToTree(result.marks()));
+        }
+        if (result.pageQuality() != null) {
+            payload.put("pageQuality", json.valueToTree(result.pageQuality()));
+        }
         outbox.append(Topics.DOCPROC_DOCUMENT_V1, "DocumentParsed", result.fileId().toString(), payload);
     }
 
@@ -371,11 +382,14 @@ public class PipelineStore {
      * @param reasonCode причина ручной проверки
      * @param reason причина смены вида специалистом
      * @param createdBy кто сменил вид
+     * @param marks признаки подписи и печати (B2-2) или null
+     * @param pageQuality качество страниц документа (B2-3) или null
      */
     public record ParsedDocument(UUID fileId, UUID packageId, int fileVersion, UUID documentId, int fromPage,
                                  int toPage, String type, BigDecimal typeConfidence, String evidence, String source,
                                  List<FieldValue> fields, String model, String promptVersion, String schemaVersion,
-                                 boolean needsReview, String reasonCode, String reason, String createdBy) {
+                                 boolean needsReview, String reasonCode, String reason, String createdBy,
+                                 DocumentMarks marks, List<PageQuality> pageQuality) {
     }
 
     /**

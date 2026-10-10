@@ -7,6 +7,7 @@ S={"type":"string"}
 NS={"type":["string","null"]}
 STAGES=["QUEUED","EXTRACTING_TEXT","CLASSIFYING","EXTRACTING_FIELDS","VALIDATING","PARSED","NEEDS_REVIEW","UNREADABLE","WAITING_MODEL","FAILED","REMOVED"]
 FILE={"fileId":U,"packageId":U,"version":I}
+MARK={"type":"object","required":["status","source"],"properties":{"status":{"enum":["DETECTED","NOT_DETECTED","UNDETERMINED"]},"source":{"enum":["TEXT","IMAGE","TEXT_AND_IMAGE"]},"confidence":{"type":["number","null"],"minimum":0,"maximum":1}},"additionalProperties":False}
 E={
  "package.package.v1":{
   "PackageCreated":({"packageId":U,"orgId":U,"inn":{"type":"string","pattern":"^(\\d{10}|\\d{12})$"},"programCode":S,"createdBy":S},None,"package: пакет создан (POST /packages)"),
@@ -21,7 +22,10 @@ E={
   "StageChanged":({**FILE,"stage":{"enum":STAGES},"reason":NS,"reasonCode":NS},["reason","reasonCode"],"docproc: смена стадии файла"),
   "DocumentsSegmented":({**FILE,"documents":{"type":"array","items":{"type":"object","required":["documentId","fromPage","toPage"],"properties":{"documentId":U,"fromPage":I,"toPage":I},"additionalProperties":False}}},None,"docproc: файл разбит на документы (сегменты страниц)"),
   "DocumentParsed":({**FILE,"documentId":U,"fromPage":I,"toPage":I,"type":S,"typeConfidence":{"type":"number","minimum":0,"maximum":1},"source":{"enum":["MODEL","SPECIALIST"]},"stage":{"enum":["PARSED","NEEDS_REVIEW"]},"reason":NS,"reasonCode":NS,"resultVersion":I,
-     "fields":{"type":"array","items":{"type":"object","required":["name","value","confidence","checks"],"properties":{"name":S,"value":{},"confidence":{"type":["number","null"]},"checks":{"type":"array","items":{"type":"object","required":["code","status","message"],"properties":{"code":S,"status":S,"message":S}}}}}}},["reason","reasonCode"],"docproc: документ разобран (вид, поля, проверки); новая версия результата — новое событие"),
+     "fields":{"type":"array","items":{"type":"object","required":["name","value","confidence","checks"],"properties":{"name":S,"value":{},"confidence":{"type":["number","null"]},"checks":{"type":"array","items":{"type":"object","required":["code","status","message"],"properties":{"code":S,"status":S,"message":S}}}}}},
+     "marks":{"type":"object","required":["signature","stamp"],"properties":{"signature":MARK,"stamp":MARK},"additionalProperties":False},
+     "pageQuality":{"type":"array","items":{"type":"object","properties":{"blur":{"type":["number","null"]},"brightness":{"type":["number","null"]},"glare":{"type":["number","null"]},"cutOff":{"type":["boolean","null"]},"meanConf":{"type":["number","null"]}},"additionalProperties":False}}},
+     ["reason","reasonCode","marks","pageQuality"],"docproc: документ разобран (вид, поля, проверки, признаки подписи/печати B2-2, качество страниц B2-3); новая версия результата — новое событие"),
   "DocumentUnreadable":({**FILE,"reason":S},None,"docproc: файл не прочитать (TEXT_NOT_FOUND и др.)"),
   "DocumentFailed":({**FILE,"reason":S},None,"docproc: разбор не удался после всех попыток"),
  },

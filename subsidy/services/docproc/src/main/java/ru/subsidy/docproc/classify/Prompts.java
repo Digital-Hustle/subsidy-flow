@@ -13,7 +13,7 @@ public final class Prompts {
     /** Версия промпта сегментации. */
     public static final String SEGMENT = "segment.v1";
     /** Версия промпта извлечения. */
-    public static final String EXTRACT = "extract.v1";
+    public static final String EXTRACT = "extract.v2";
 
     private Prompts() {
     }
