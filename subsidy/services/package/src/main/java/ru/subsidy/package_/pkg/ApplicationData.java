@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Digits;
@@ -32,6 +33,7 @@ public record ApplicationData(
         @NotNull @Valid Address address,
         @NotBlank @Size(max = ApplicationData.PROJECT_MAX) String project,
         @NotNull @DecimalMin("0.01") @Digits(integer = ApplicationData.MONEY_DIGITS, fraction = 2)
+        @Schema(type = "string", example = "150000.00")
         @JsonFormat(shape = JsonFormat.Shape.STRING) BigDecimal requestedAmount,
         @NotNull LocalDate applicationDate,
         @NotNull @Valid Signatory signatory,

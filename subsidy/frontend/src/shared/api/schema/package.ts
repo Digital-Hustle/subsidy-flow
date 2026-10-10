@@ -4,6 +4,23 @@
  */
 
 export interface paths {
+    "/api/v1/packages/{packageId}/application": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Изменить заявку и запустить перепроверку */
+        put: operations["update"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/staff": {
         parameters: {
             query?: never;
@@ -177,7 +194,7 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        patch: operations["update"];
+        patch: operations["update_1"];
         trace?: never;
     };
     "/internal/staff/jwks": {
@@ -268,6 +285,23 @@ export interface paths {
             cookie?: never;
         };
         get: operations["get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/packages/{packageId}/application/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** История изменений заявки */
+        get: operations["history"];
         put?: never;
         post?: never;
         delete?: never;
@@ -373,6 +407,45 @@ export interface components {
                 [key: string]: unknown;
             } | null;
         };
+        Address: {
+            value: string;
+            purpose: string;
+        };
+        ApplicationData: {
+            orgInn: string;
+            orgName: string;
+            ogrn: string;
+            address: components["schemas"]["Address"];
+            project: string;
+            /** @example 150000.00 */
+            requestedAmount: string;
+            /** Format: date */
+            applicationDate: string;
+            signatory: components["schemas"]["Signatory"];
+            property?: components["schemas"]["Property"];
+        };
+        Property: {
+            cadastralNumber: string;
+            address: string;
+            rightType: string;
+        };
+        Signatory: {
+            fullName: string;
+            position: string;
+            authority: string;
+        };
+        UpdateApplicationRq: {
+            /** Format: int32 */
+            expectedRevision: number;
+            application: components["schemas"]["ApplicationData"];
+        };
+        Revision: {
+            /** Format: uuid */
+            packageId?: string;
+            /** Format: int32 */
+            applicationRevision?: number;
+            application?: components["schemas"]["ApplicationData"];
+        };
         InviteRq: {
             name: string;
             /** Format: email */
@@ -394,6 +467,7 @@ export interface components {
         CreatePackageRequest: {
             orgInn: string;
             programCode: string;
+            application?: components["schemas"]["ApplicationData"];
         };
         Org: {
             inn?: string;
@@ -405,6 +479,9 @@ export interface components {
             status?: string;
             program?: string;
             org?: components["schemas"]["Org"];
+            /** Format: int32 */
+            applicationRevision?: number;
+            application?: components["schemas"]["ApplicationData"];
         };
         AcceptedFile: {
             /** Format: uuid */
@@ -550,6 +627,7 @@ export interface components {
             stage?: string;
             reasonCode?: string;
             documents?: components["schemas"]["DocumentCard"][];
+            electronicSignature?: components["schemas"]["SignaturePresence"];
         };
         PackageCard: {
             /** Format: uuid */
@@ -562,6 +640,9 @@ export interface components {
             /** Format: date-time */
             updatedAt?: string;
             files?: components["schemas"]["FileCard"][];
+            /** Format: int32 */
+            applicationRevision?: number;
+            application?: components["schemas"]["ApplicationData"];
         };
         ProtocolSummary: {
             status?: string;
@@ -573,6 +654,24 @@ export interface components {
             warnings?: number;
             /** Format: int32 */
             needsReview?: number;
+        };
+        SignaturePresence: {
+            status?: string;
+            present?: boolean;
+            reason?: string;
+            cryptographicallyVerified?: boolean;
+        };
+        ApplicationHistoryRs: {
+            items?: components["schemas"]["Change"][];
+        };
+        Change: {
+            /** Format: int32 */
+            revision?: number;
+            changedBy?: string;
+            /** Format: date-time */
+            changedAt?: string;
+            before?: components["schemas"]["ApplicationData"];
+            after?: components["schemas"]["ApplicationData"];
         };
         ModeRs: {
             mode?: string;
@@ -588,6 +687,50 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                packageId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateApplicationRq"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["Revision"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Payload Too Large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
     list: {
         parameters: {
             query?: never;
@@ -1138,7 +1281,7 @@ export interface operations {
             };
         };
     };
-    update: {
+    update_1: {
         parameters: {
             query?: never;
             header?: never;
@@ -1403,6 +1546,46 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["PackageCard"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Payload Too Large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    history: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                packageId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApplicationHistoryRs"];
                 };
             };
             /** @description Bad Request */
