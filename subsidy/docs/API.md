@@ -73,7 +73,11 @@
 - `GET /organizations/{inn}/history` → `[{at, by, action, packageId, details}]` (B-03)
 - `GET /stats/errors?from=&to=&program=` → `[{rule, count, share}]` + «как посчитано» (B-04)
 - `GET /expiring?days=30` → документы, срок которых истекает (B-05)
-- `GET /programs`, `GET /programs/{code}` → параметры и чек-лист; `PUT /programs/{code}` — только `SENIOR_SPECIALIST`, новая версия
+- `GET /programs`, `GET /programs/{code}` → `{code, version, name, demo, params, checklist, updatedBy, updatedAt, accepting}`; `GET /programs/{code}/versions` → `{items: [та же форма]}`, новые первыми (история версий). Читают SPECIALIST/SENIOR/AUDITOR; неизвестный код → 400 `PROGRAM_NOT_FOUND`
+- `POST /programs` `{code, name, params, checklist}` → 201 версия 1 — только `SENIOR_SPECIALIST` (FR-35). `code` — `[A-Z][A-Z0-9_]{1,31}`, уникален: занят → 409 `PROGRAM_EXISTS`; формат кода, чек-листа, правил или `params` неверен → 400 `VALIDATION_ERROR`
+- `PUT /programs/{code}` `{name?, params, checklist}` → новая версия **существующей** программы — только `SENIOR_SPECIALIST`; неизвестный код → 400 `PROGRAM_NOT_FOUND` (создание — только `POST`). Нерешённые пакеты программы перепроверяются
+- `params`: `description?` (строка ≤ 2000, видит заявитель), `deadline?` (`ГГГГ-ММ-ДД`, последний день приёма), `rules` (декларативные правила, ADR-027; суммы и доли — параметры правил `RANGE.min/max`, `RATIO_MIN.min`). `accepting` считает сервер: срока нет или сегодня ≤ `deadline`
+- Пункт `checklist`: `{item (уникален), title, kind: REQUIRED|ONE_OF|CONDITIONAL, types: [код вида из реестра docproc], condition?, conditionText?, single}`
 
 ## assistant (`/assistant/api/v1`)
 - `POST /packages/{id}/ask` `{question}` (≤ 1000 симв.) → `{messageId, answer, sources: [{documentId?, field?, rule?}], tools: [имена], validator: {status: OK|NUMBERS_MISMATCH, details: [числа/даты без подтверждения]}, model, createdAt}` (B-06; ответ только из инструментов `get_protocol|get_missing|get_fields|get_anomalies`, ≤ 4 вызова, числа сверяет валидатор). Ошибки: 404 `PACKAGE_NOT_FOUND`, 503 `MODEL_UNAVAILABLE`/`DEPENDENCY_UNAVAILABLE`, 404 `NOT_FOUND` при `ASSISTANT_ENABLED=false`
