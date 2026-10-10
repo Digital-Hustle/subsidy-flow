@@ -36,7 +36,8 @@ class ApplicationDataValidationTest {
         try (var factory = Validation.buildDefaultValidatorFactory()) {
             assertThat(factory.getValidator().validate(soleTrader)).isEmpty();
             assertThat(factory.getValidator().validate(new ApplicationData("12345678901", "Х", "1027700132195",
-                    soleTrader.address(), "П", soleTrader.requestedAmount(), soleTrader.applicationDate(), soleTrader.signatory(), null))).hasSize(1);
+                    soleTrader.address(), "П", soleTrader.requestedAmount(), soleTrader.applicationDate(),
+                    soleTrader.signatory(), null))).hasSize(1);
         }
     }
 
