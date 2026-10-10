@@ -1,0 +1,6 @@
+---
+description: Правила кейса «Субсидии» (папка subsidy/)
+globs: subsidy/**
+alwaysApply: false
+---
+Перед любой задачей прочитай subsidy/AGENTS.md, subsidy/rules.md и .agents/skills/subsidy-dev/SKILL.md и следуй циклу из скилла: ID требования → ветка → реализация в границах модуля → subsidy/scripts/verify.sh + subsidy/scripts/guard.sh → subsidy/scripts/open-pr.sh. Красные линии rules.md §1 нарушать нельзя.

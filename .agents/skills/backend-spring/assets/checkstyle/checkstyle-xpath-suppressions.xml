@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<!DOCTYPE suppressions PUBLIC
+        "-//Checkstyle//DTD SuppressionXpathFilter Experimental Configuration 1.2//EN"
+        "https://checkstyle.org/dtds/suppressions_1_2_xpath_experimental.dtd">
+
+<suppressions>
+    <!-- suppress the rule "ParameterNumber" for Spring Data repositories -->
+    <suppress-xpath checks="ParameterNumber"
+                    query="//INTERFACE_DEF[./MODIFIERS[./ANNOTATION[./IDENT[@text = 'Repository']]]]//*"/>
+    <suppress-xpath checks="HideUtilityClassConstructor"
+                    query="//CLASS_DEF[
+                        ./MODIFIERS[./ANNOTATION[./IDENT[@text='NoArgsConstructor']
+                            and ./ANNOTATION_MEMBER_VALUE_PAIR[./IDENT[@text='access']
+                            and ./EXPR[./DOT[./IDENT[@text='AccessLevel'] and ./IDENT[@text='PRIVATE']]]]]]
+                        or ./IDENT[matches(@text, '.*App$') or matches(@text, '.*Application$')]
+                    ]"/>
+    <!-- ArchUnit: класс-контейнер статических правил -->
+    <suppress-xpath checks="HideUtilityClassConstructor"
+                    query="//CLASS_DEF[./MODIFIERS[./ANNOTATION[./IDENT[@text='AnalyzeClasses']]]]"/>
+</suppressions>

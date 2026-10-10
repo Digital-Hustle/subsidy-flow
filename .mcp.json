@@ -1,0 +1,18 @@
+{
+  "mcpServers": {
+    "shadcn": {
+      "command": "sh",
+      "args": [
+        "-c",
+        "cd subsidy/frontend 2>/dev/null; exec npx -y shadcn@latest mcp"
+      ]
+    },
+    "magicui": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@magicuidesign/mcp@latest"
+      ]
+    }
+  }
+}

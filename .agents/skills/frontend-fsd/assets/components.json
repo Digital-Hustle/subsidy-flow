@@ -1,0 +1,33 @@
+{
+  "$schema": "https://ui.shadcn.com/schema.json",
+  "style": "new-york",
+  "rsc": false,
+  "tsx": true,
+  "tailwind": {
+    "config": "",
+    "css": "src/app/styles/index.css",
+    "baseColor": "neutral",
+    "cssVariables": true,
+    "prefix": ""
+  },
+  "aliases": {
+    "components": "@/shared/ui",
+    "ui": "@/shared/ui",
+    "utils": "@/shared/lib/utils",
+    "lib": "@/shared/lib",
+    "hooks": "@/shared/hooks"
+  },
+  "iconLibrary": "lucide",
+  "registries": {
+    "@magicui": "https://magicui.design/r/{name}",
+    "@aceternity": "https://ui.aceternity.com/registry/{name}.json",
+    "@react-bits": "https://reactbits.dev/r/{name}.json",
+    "@eldoraui": "https://eldoraui.site/r/{name}.json",
+    "@animate-ui": "https://animate-ui.com/r/{name}.json",
+    "@motion-primitives": "https://motion-primitives.com/c/{name}.json",
+    "@cult-ui": "https://cult-ui.com/r/{name}.json",
+    "@smoothui": "https://smoothui.dev/r/{name}.json",
+    "@evilcharts": "https://evilcharts.com/r/{name}.json",
+    "@lucide-animated": "https://lucide-animated.com/r/{name}.json"
+  }
+}

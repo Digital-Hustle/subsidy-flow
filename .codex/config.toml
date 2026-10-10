@@ -1,0 +1,8 @@
+# MCP для Codex CLI (проектный конфиг; если ваша версия Codex его не читает — скопируйте в ~/.codex/config.toml)
+[mcp_servers.shadcn]
+command = "sh"
+args = ["-c", "cd subsidy/frontend 2>/dev/null; exec npx -y shadcn@latest mcp"]
+
+[mcp_servers.magicui]
+command = "npx"
+args = ["-y", "@magicuidesign/mcp@latest"]
