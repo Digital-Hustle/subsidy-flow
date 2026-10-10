@@ -26,8 +26,8 @@ select latest.code, latest.version + 1, latest.name, latest.demo,
                where not exists (select 1 from jsonb_array_elements(coalesce(latest.params->'rules', '[]'::jsonb)) old
                                  where old->>'code' = additions.value->>'code')
            ) updated_rules)),
-       (select jsonb_agg(case when item->>'kind' = 'CONDITIONAL' and not (item ? 'condition')
-                              then item || jsonb_build_object('condition', case when item->'types' ? 'GIMS_DECLARATION'
+       (select jsonb_agg(case when item->>'kind' = 'CONDITIONAL' and item->'condition' is null
+                              then item || jsonb_build_object('condition', case when item->'types' @> '["GIMS_DECLARATION"]'::jsonb
                                   then 'needsGims' else 'needsCertificate' end) else item end order by pos)
         from jsonb_array_elements(latest.checklist) with ordinality checklist(item, pos)),
        'migration-B3', now()

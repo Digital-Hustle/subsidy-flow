@@ -39,7 +39,7 @@ class PackagesIntegrationTest extends AbstractIntegrationTest {
         String body = "{\"orgInn\":\"" + INN + "\",\"programCode\":\"NEW_PROGRAM\"}";
         mockMvc.perform(post("/api/v1/packages").with(authentication(user("SPECIALIST")))
                         .contentType(MediaType.APPLICATION_JSON).content(body))
-                .andExpect(status().isCreated()).andExpect(jsonPath("$.programCode").value("NEW_PROGRAM"));
+                .andExpect(status().isCreated()).andExpect(jsonPath("$.program").value("NEW_PROGRAM"));
         verify(programCatalog).require("NEW_PROGRAM");
         doThrow(new DomainException(ErrorCode.PROGRAM_NOT_FOUND, "Нет программы"))
                 .when(programCatalog).require("NEW_PROGRAM");

@@ -79,9 +79,6 @@ public class PackageService {
         if (application != null && !orgInn.equals(application.orgInn())) {
             throw new DomainException(ErrorCode.VALIDATION_ERROR, "ИНН заявки должен совпадать с ИНН пакета");
         }
-        if (application != null && !orgInn.equals(application.orgInn())) {
-            throw new DomainException(ErrorCode.VALIDATION_ERROR, "ИНН заявки должен совпадать с ИНН пакета");
-        }
         if (idempotencyKey != null) {
             Optional<UUID> existing = dsl.select(Tables.PACKAGES.ID).from(Tables.PACKAGES)
                     .where(Tables.PACKAGES.IDEMPOTENCY_KEY.eq(idempotencyKey)).fetchOptional(Tables.PACKAGES.ID);
