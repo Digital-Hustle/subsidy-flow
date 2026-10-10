@@ -604,7 +604,7 @@
             "string",
             "null"
           ],
-          "description": "ИНН, как в письме без указания роли (совместимость с правилами INN_SAME); предпочтительно guarantorInn / beneficiaryInn"
+          "description": "ИНН заявителя субсидии для сверки INN_SAME: beneficiaryInn, а если письмо пишет сам заявитель — guarantorInn; ИНН стороннего гаранта сюда не ставить"
         },
         "beneficiaryName": {
           "type": [
