@@ -40,7 +40,7 @@ export const FieldsPanel = ({ packageId, doc, canAct, active, onActive }: {
     return () => removeEventListener("keydown", on);
   }, [fields, active, canAct, onActive]);
 
-  if (!all.length) return <EmptyState title="Полей пока нет" text={doc.real ? "Документ ещё разбирается или не прочитан — см. стадию и причину выше" : "Файл ещё разбирается: модель ищет в нём документы"} />;
+  if (!all.length) return <EmptyState title="Полей пока нет" text={doc.stage === "UNREADABLE" || doc.stage === "FAILED" ? "Обработка завершилась с проблемой. Причина, оригинал и действия восстановления — выше" : doc.stage === "WAITING_MODEL" ? "Модель временно недоступна. Обработка продолжится автоматически" : doc.real ? "Документ ещё разбирается — см. стадию выше" : "Модель ищет документы в файле"} />;
   return (
     <div className="flex flex-col gap-2">
     {attentionCount > 0 && attentionCount < all.length && (

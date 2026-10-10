@@ -11,7 +11,8 @@
     "gen:tokens": "node --experimental-strip-types --no-warnings scripts/gen-tokens.mjs src/shared/config/tokens.ts --css src/app/styles/theme.css --md docs/DESIGN.md",
     "fsd-check": "node ../../.agents/skills/frontend-fsd/scripts/fsd-check.mjs src",
     "gen:api": "node scripts/gen-api.mjs",
-    "lint": "eslint src"
+    "lint": "eslint src",
+    "test": "node --experimental-strip-types --no-warnings --test tests/*.test.mjs"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.104.1",

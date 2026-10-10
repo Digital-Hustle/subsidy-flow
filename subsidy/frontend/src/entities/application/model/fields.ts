@@ -1,4 +1,4 @@
-import type { DocumentCard, FieldCard, FieldCheck, FileCard, PackageRs, Card } from "./types";
+import type { DocumentCard, FieldCard, FieldCheck, FileCard, PackageRs, Card } from "./types.ts";
 
 /** Подписи полей документов (docs/DOC-TYPES.md): специалист видит русские названия, а не ключи схемы. */
 const FIELD: Record<string, string> = {
@@ -8,6 +8,7 @@ const FIELD: Record<string, string> = {
   issuer: "Орган сертификации", issueDate: "Дата выдачи", validUntil: "Действует до", description: "Описание",
   items: "Статьи расходов", name: "Наименование", qty: "Количество", price: "Цена", amount: "Сумма", bankName: "Банк",
   account: "Номер счёта", bik: "БИК", balance: "Остаток", cadastralNumber: "Кадастровый номер", area: "Площадь",
+  beneficiaryName: "Заявитель / получатель гарантии", beneficiaryInn: "ИНН заявителя", guarantorInn: "ИНН гаранта", tenant: "Арендатор", addresses: "Адреса и назначение", signaturePresent: "Подпись", stampPresent: "Печать",
   purpose: "Назначение", address: "Адрес", rightHolder: "Правообладатель", guarantorName: "Организация-гарант", summary: "Описание",
 };
 export const fieldLabel = (name: string) => FIELD[name] ?? name;
@@ -28,7 +29,7 @@ const BROKEN = new Set(["FAILED", "UNREADABLE", "NEEDS_REVIEW", "WAITING_MODEL"]
 type RawField = { name?: string; value?: unknown; raw?: string | null; confidence?: number | null; checks?: FieldCheck[] | null; page?: number | null; bbox?: number[] | null };
 /** Результат docproc по документу (GET /docproc/packages/{id}/documents). */
 export type DocResult = {
-  documentId?: string; fileId?: string; stage?: string; reasonCode?: string; type?: string; typeConfidence?: number;
+  documentId?: string; fileId?: string; fileVersion?: number; stage?: string; reasonCode?: string; type?: string; typeConfidence?: number;
   evidence?: string; source?: string; fields?: unknown; model?: string; promptVersion?: string;
 };
 
@@ -39,7 +40,7 @@ const toFields = (raw: unknown): FieldCard[] => {
     const checks = f.checks ?? [];
     const value = fieldText(f.value);
     const attention = checks.some((c) => BAD_CHECK.has(c.status)) || (f.confidence != null && f.confidence < LOW_CONFIDENCE) || !value;
-    return { name: f.name!, title: fieldLabel(f.name!), value, raw: f.raw, confidence: f.confidence, checks, attention, page: f.page, bbox: f.bbox };
+    return { name: f.name!, title: fieldLabel(f.name!), value, extractedValue: f.value, raw: f.raw, confidence: f.confidence, checks, attention, page: f.page, bbox: f.bbox };
   });
   // «Перепроверить» — сверху, остальные в порядке схемы.
   return [...out.filter((f) => f.attention), ...out.filter((f) => !f.attention)];
@@ -53,12 +54,13 @@ export const buildCard = (p: PackageRs, results: DocResult[], typeName: (t?: str
     const pages = Math.max(1, f.pages ?? 1);
     const docs = f.documents ?? [];
     if (!docs.length) {
-      return [{ id: `file:${f.fileId}`, fileId: f.fileId, fileName: f.name, real: false, stage: f.stage, reasonCode: f.reasonCode, type: null, typeName: null,
+      return [{ id: `file:${f.fileId}`, fileId: f.fileId, fileName: f.name, real: false, stage: f.stage, reasonCode: f.reasonCode, electronicSignature: f.electronicSignature, message: f.message, hint: f.hint, type: null, typeName: null,
         fromPage: 1, toPage: pages, files: [{ id: f.fileId, name: f.name, version: f.version, pages, offset: 0 }], fields: [],
         attention: BROKEN.has(f.stage ?? "") || !!f.reasonCode }];
     }
     return docs.map((d) => {
-      const r = byId.get(d.documentId);
+      const result = byId.get(d.documentId);
+      const r = result?.fileVersion != null && f.version != null && result.fileVersion !== f.version ? undefined : result;
       const from = d.fromPage ?? 1;
       const to = Math.max(from, d.toPage ?? pages);
       const type = r?.type ?? d.type ?? null;
@@ -67,7 +69,7 @@ export const buildCard = (p: PackageRs, results: DocResult[], typeName: (t?: str
       const reasonCode = r?.reasonCode ?? d.reasonCode ?? null;
       return {
         id: d.documentId, fileId: f.fileId, fileName: f.name, real: true, type, typeName: typeName(type),
-        typeConfidence: r?.typeConfidence ?? d.typeConfidence, source: r?.source ?? d.source, stage, reasonCode,
+        electronicSignature: f.electronicSignature, message: f.message, hint: f.hint, typeConfidence: r?.typeConfidence ?? d.typeConfidence, source: r?.source ?? d.source, stage, reasonCode,
         evidence: r?.evidence, model: r?.model, promptVersion: r?.promptVersion, fromPage: from, toPage: to,
         files: [{ id: f.fileId, name: f.name, version: f.version, pages: to - from + 1, offset: from - 1 }], fields,
         attention: BROKEN.has(stage ?? "") || !!reasonCode || fields.some((x) => x.attention),

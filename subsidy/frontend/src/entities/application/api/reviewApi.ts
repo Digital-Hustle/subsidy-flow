@@ -1,6 +1,7 @@
 import { api, ApiError, download } from "@/shared/api";
+import { hasApplicationDetails, unsavedApplicationFields } from "../model/application-form";
 import { buildCard, type DocResult } from "../model/fields";
-import type { Card, DocType, Expiring, HistoryEntry, ModelStatus, PackageRs, QueuePage } from "../model/types";
+import type { Card, DocType, Expiring, HistoryEntry, ModelStatus, PackageRs, QueuePage, ApplicationData, UploadResult } from "../model/types";
 
 export type QueueFilter = { status?: string; q?: string; assignee?: string; sort?: string; program?: string; inn?: string };
 
@@ -16,6 +17,12 @@ const optional = async <T,>(p: Promise<T>, fallback: T): Promise<T> => {
   try { return await p; } catch (e) { if (e instanceof ApiError && (e.status === 404 || e.status === 405 || e.status === 501)) return fallback; throw e; }
 };
 
+const verifyApplication = async (id: string, expected: ApplicationData) => {
+  const card = await api<PackageRs>("package", `/packages/${id}`);
+  const missing = unsavedApplicationFields(expected, card.application);
+  if (missing.length) throw new ApiError(409, "APPLICATION_NOT_SAVED", "Сервер сохранил не все сведения заявки", "Введённые значения оставлены в форме. Обновите API перед повторным сохранением.", undefined, { packageId: id, errors: missing.map((field) => ({ field: `application.${field}`, message: "Сервер не сохранил это поле" })) });
+};
+
 let typesCache: Promise<DocType[]> | null = null;
 const types = () => {
   typesCache ??= api<{ items?: DocType[] }>("docproc", "/doc-types").then((r) => r.items ?? []).catch((e: unknown) => { typesCache = null; throw e; });
@@ -27,6 +34,24 @@ const types = () => {
  * Карточку собираем здесь, чтобы страницы работали с одной моделью.
  */
 export const reviewApi = {
+  create: async (orgInn: string, programCode: string, application: ApplicationData, key: string) => {
+    const created = await api<{ packageId: string }>("package", "/packages", { method: "POST", body: { orgInn, programCode, ...(hasApplicationDetails(application) ? { application } : {}) }, headers: { "Idempotency-Key": key } });
+    if (hasApplicationDetails(application)) await verifyApplication(created.packageId, application);
+    return created;
+  },
+  updateApplication: async (id: string, expectedRevision: number, application: ApplicationData) => {
+    await api<unknown>("package", `/packages/${id}/application`, { method: "PUT", body: { expectedRevision, application } });
+    await verifyApplication(id, application);
+  },
+  upload: (id: string, files: File[]) => {
+    const body = new FormData(); files.forEach((file) => body.append("files", file, file.name));
+    return api<UploadResult>("package", `/packages/${id}/files`, { method: "POST", body });
+  },
+  replace: (id: string, fileId: string, file: File) => {
+    const body = new FormData(); body.append("file", file, file.name);
+    return api<UploadResult>("package", `/packages/${id}/files/${fileId}/versions`, { method: "POST", body });
+  },
+  downloadOriginal: (fileId: string, version: number, name: string) => download("package", `/files/${fileId}/content?version=${version}`, name),
   queue: (f: QueueFilter, cursor: string | null, limit = 30) => api<QueuePage>("package", `/packages${qs({ ...f, cursor, limit })}`),
   count: (status: string) => api<QueuePage>("package", `/packages${qs({ status, limit: 1 })}`).then((r) => r.page?.total ?? r.items?.length ?? 0),
   /** Следующая свободная заявка; пока на стенде нет /packages/next — самая давняя проверенная из очереди. */
@@ -36,14 +61,6 @@ export const reviewApi = {
       const r = await api<QueuePage>("package", `/packages${qs({ status: "CHECKED", sort: "waiting", limit: 1 })}`);
       return { packageId: r.items?.[0]?.id };
     }
-  },
-  /** Пакет от специалиста (документы принесли не через кабинет): ИНН + программа, Idempotency-Key от двойного клика. */
-  create: (orgInn: string, programCode: string) =>
-    api<{ packageId: string }>("package", "/packages", { method: "POST", body: { orgInn, programCode }, headers: { "Idempotency-Key": crypto.randomUUID() } }),
-  uploadFiles: (packageId: string, files: File[]) => {
-    const form = new FormData();
-    files.forEach((f) => form.append("files", f, f.name));
-    return api<{ accepted?: unknown[]; rejected?: { name: string; code?: string; detail?: string; hint?: string }[] }>("package", `/packages/${packageId}/files`, { method: "POST", body: form });
   },
   assign: (id: string, force = false) => api<void>("package", `/packages/${id}/assign${force ? "?force=true" : ""}`, { method: "POST" }),
   card: async (id: string): Promise<Card> => {

@@ -31,3 +31,5 @@
 
 ## 5. Журнал изменений (дописывать в конец)
 - 2026-10-09 · miroslavrov · docs: документы модуля и DESIGN.md (ADR-013)
+
+- 2026-10-10 · F1-1…4 · Перенесено на новый интерфейс main (#5): /operator, общая ApplicationFields в entities/application, manage-application (создание/редактирование), manage-documents (загрузка, оригинал, замена). Форматы по исходному кейсу PDF/DOC/DOCX/XLS/XLSX/JPG/JPEG/PNG. Проверки реквизитов и расчёты — серверные. Стороны beneficiary/guarantor/rightHolder/tenant; nullable признаки signaturePresent/stampPresent; ЭП из структуры file.electronicSignature. Кеш и запрос превью содержат версию, старый результат fileVersion не подмешивается. Бэкенд B1 пока ограничен PDF и не сохраняет totalCost/ownFunds/area/purpose/rightHolder: frontend показывает отказы и сверяет сохранённые поля вместо ложного успеха.

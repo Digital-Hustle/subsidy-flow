@@ -88,7 +88,7 @@ export const DatePicker = ({ value, onChange, min, max, placeholder = "Выбе�
   return (
     <>
       <Trigger state={p} text={value ? formatDayRu(value) : ""} placeholder={placeholder} icon={<CalendarDays />} {...rest} />
-      <PopoverPanel state={p} label="Календарь"><Calendar value={value} min={min} max={max} onPick={(k) => { onChange(k); p.setOpen(false); }} /></PopoverPanel>
+      <PopoverPanel state={p} label="Календарь"><Calendar value={value || undefined} min={min} max={max} onPick={(k) => { onChange(k); p.setOpen(false); }} /></PopoverPanel>
     </>
   );
 };

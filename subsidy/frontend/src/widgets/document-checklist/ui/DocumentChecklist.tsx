@@ -42,7 +42,7 @@ const DocCard = ({ d, titleOf, up, locked }: { d: ApplicantDocument; titleOf: (t
           <span className="truncate text-sm font-medium">{d.fileName ?? "Документ"}</span>
           <span className="flex flex-wrap items-center gap-x-2 text-xs text-muted-foreground">
             {d.pages ? <span>{d.pages} стр.</span> : null}
-            {d.electronicSignature ? <span className="inline-flex items-center gap-1 text-success"><PenLine className="size-3" />есть электронная подпись</span> : null}
+            {d.electronicSignature?.present === true ? <span className="inline-flex items-center gap-1 text-success"><PenLine className="size-3" />есть электронная подпись</span> : null}
           </span>
           {!st.done && <Progress value={st.progress} className="h-1" />}
         </div>
@@ -78,7 +78,7 @@ const RemoveButton = ({ applicationId, docId }: { applicationId: string; docId: 
   return <Button size="icon-sm" variant="quiet" aria-label="Удалить документ" disabled={rm.isPending} onClick={() => rm.mutate(docId)}><Trash2 /></Button>;
 };
 
-/** Список документов программы (считает сервер), загрузка PDF в пункт, стадии разбора по SSE. */
+/** Список документов программы (считает сервер), загрузка документов в пункт, стадии разбора по SSE. */
 export const DocumentChecklist = ({ app, titleOf }: { app: ApplicantApplication; titleOf: (t?: string) => string }) => {
   const id = app.applicationId;
   const up = useUpload(id);
@@ -128,7 +128,7 @@ export const DocumentChecklist = ({ app, titleOf }: { app: ApplicantApplication;
           {warn && <p className="mt-3 text-sm text-warning-soft-foreground">{warn.join(". ")}</p>}
           {!locked && (list.length === 0 || state === "PROBLEM" || type === EXTRA) && (
             <div className="mt-4">
-              <UploadButtons size="md" label={err ? "Загрузить другой файл" : list.length ? "Ещё документ" : "Загрузить PDF"} disabled={up.pendingFor === type}
+              <UploadButtons size="md" label={err ? "Загрузить другой файл" : list.length ? "Ещё документ" : "Загрузить документ"} disabled={up.pendingFor === type}
                 onFile={(f) => up.upload({ file: f, slotType: type === EXTRA ? undefined : type })} />
               {up.pendingFor === type && <p className="mt-2 text-sm text-muted-foreground">Отправляем файл…</p>}
             </div>
@@ -140,6 +140,7 @@ export const DocumentChecklist = ({ app, titleOf }: { app: ApplicantApplication;
 
   return (
     <div className="flex flex-col gap-4">
+      <p className="text-sm text-muted-foreground">Допустимые форматы: PDF, DOC/DOCX, XLS/XLSX, JPG/PNG.</p>
       <Card className="p-4 sm:p-5">
         <div className="flex items-baseline justify-between gap-3"><span className="font-semibold">Обязательные документы</span><span className="text-sm text-muted-foreground">{done} из {total}</span></div>
         <Progress value={total ? done / total : 0} className="mt-3" />

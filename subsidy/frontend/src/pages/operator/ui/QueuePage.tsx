@@ -4,8 +4,9 @@ import { keepPreviousData, useInfiniteQuery, useQuery } from "@tanstack/react-qu
 import { AnimatePresence, motion } from "motion/react";
 import { AlertTriangle, ChevronRight, Inbox, Loader2, Search, UserRound } from "lucide-react";
 import { AppStatusBadge, dateTimeRu, reviewApi, reviewKeys, statusView, waitingRu, type QueueFilter } from "@/entities/application";
+import { can, useSession } from "@/entities/session";
+import { CreateApplicationButton } from "@/features/manage-application";
 import { TakeNextButton, useTakeNext } from "@/features/take-next";
-import { CreatePackageButton } from "@/features/create-package";
 import { useProgramName } from "@/entities/protocol";
 import { can, useSession } from "@/entities/session";
 import { AnimatedNumber, Avatar, Button, Card, CardHeader, CardTitle, EmptyState, Input, LoadMore, PageHeader, RowsSkeleton, Segmented, Select, Status } from "@/shared/ui";
@@ -67,7 +68,7 @@ export const QueuePage = () => {
   const programName = useProgramName();
   const [sp, setSp] = useSearchParams();
   const next = useTakeNext();
-  const canCreate = can(useSession().roles, "act");
+  const session = useSession();
   const text0 = sp.get("q") ?? "";
   const inn = /^\d{10}(\d{2})?$/.test(text0) ? text0 : "";
   const f: QueueFilter = { status: sp.get("status") ?? "", q: text0, inn, assignee: sp.get("assignee") ?? "", sort: sp.get("sort") ?? "waiting" };
@@ -83,7 +84,7 @@ export const QueuePage = () => {
     refetchInterval: 15_000, // у package поток событий только по пакету (/stream?packageId=) — очередь опрашиваем
   });
   useEffect(() => {
-    const on = (e: KeyboardEvent) => { if (e.key === "n" && !(e.target instanceof HTMLInputElement) && !next.isPending) next.mutate(); };
+    const on = (e: KeyboardEvent) => { if (e.key === "n" && !(e.target instanceof HTMLElement && e.target.closest("input, textarea, [role=dialog], [role=combobox]")) && !next.isPending) next.mutate(); };
     addEventListener("keydown", on);
     return () => removeEventListener("keydown", on);
   }, [next]);
@@ -92,7 +93,7 @@ export const QueuePage = () => {
 
   return (
     <>
-      <PageHeader title="Очередь заявок" sub="Сначала — дольше всех ждущие. Ошибки и предупреждения протокола видны сразу" actions={<div className="flex flex-wrap gap-2">{canCreate && <CreatePackageButton />}<TakeNextButton /></div>} />
+      <PageHeader title="Очередь заявок" sub="Сначала — дольше всех ждущие. Ошибки и предупреждения протокола видны сразу" actions={<div className="flex flex-wrap gap-2">{can(session.roles, "act") && <CreateApplicationButton />}<TakeNextButton /></div>} />
       <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:gap-6">
         <div className="min-w-0 flex-1">
       <div className="mb-4 flex flex-col gap-2 md:flex-row md:flex-wrap md:items-center">

@@ -20,7 +20,7 @@ export type FieldCard = {
   name: string; title: string; value: string; raw?: string | null; confidence?: number | null;
   checks: FieldCheck[]; attention: boolean; page?: number | null; bbox?: number[] | null;
   /** Значение поправил специалист (до перезапроса карточки). */
-  corrected?: boolean; modelValue?: string;
+  corrected?: boolean; modelValue?: string; extractedValue?: unknown;
 };
 /** Файл документа: страницы документа — диапазон fromPage..toPage внутри файла. */
 export type DocFile = { id: string; name?: string; version?: number; pages: number; offset: number };
@@ -29,10 +29,12 @@ export type DocumentCard = {
   id: string; fileId: string; fileName?: string; real: boolean;
   type?: string | null; typeName?: string | null; typeConfidence?: number | null; source?: string | null;
   stage?: string | null; reasonCode?: string | null; evidence?: string | null; model?: string | null; promptVersion?: string | null;
-  fromPage: number; toPage: number; files: DocFile[]; fields: FieldCard[]; attention: boolean;
+  fromPage: number; toPage: number; files: DocFile[]; fields: FieldCard[]; attention: boolean; electronicSignature?: ElectronicSignature | null; message?: string | null; hint?: string | null;
 };
+export type ElectronicSignature = { status: "PRESENT" | "ABSENT" | "UNKNOWN"; present: boolean | null; reason?: string | null; cryptographicallyVerified?: boolean };
 export type FileCard = {
   fileId: string; version?: number; name?: string; mime?: string; pages?: number | null; stage?: string; reasonCode?: string | null;
+  electronicSignature?: ElectronicSignature | null; message?: string | null; hint?: string | null;
   documents?: { documentId: string; fromPage?: number; toPage?: number; type?: string | null; typeConfidence?: number | null; source?: string | null; stage?: string; reasonCode?: string | null }[];
 };
 export type ProtocolSummary = { status?: string; completeness?: number | null; failed?: number; warnings?: number; needsReview?: number };
@@ -43,9 +45,9 @@ export type OperatorRequest = { id?: string; type?: string | null; documentId?: 
 export type ApplicationData = {
   orgInn?: string | null; orgName?: string | null; ogrn?: string | null;
   address?: { value?: string | null; purpose?: "LEGAL" | "ACTUAL" | "PROJECT" | string | null } | null;
-  project?: string | null; requestedAmount?: string | null; applicationDate?: string | null;
+  project?: string | null; requestedAmount?: string | null; totalCost?: string | null; ownFunds?: string | null; applicationDate?: string | null;
   signatory?: { fullName?: string | null; position?: string | null; authority?: string | null } | null;
-  property?: { cadastralNumber?: string | null; address?: string | null; rightType?: "OWNERSHIP" | "LEASE" | "USE" | string | null } | null;
+  property?: { area?: string | null; purpose?: string | null; rightHolder?: string | null; cadastralNumber?: string | null; address?: string | null; rightType?: "OWNERSHIP" | "LEASE" | "USE" | string | null } | null;
 };
 
 export type PackageRs = {
@@ -72,7 +74,7 @@ export type RequiredDocument = { type: string; title?: string; hint?: string | n
 export type ApplicantDocument = {
   id: string; fileId?: string; slotType?: string | null; detectedType?: string | null; detectedTypeName?: string | null;
   fileName?: string; pages?: number | null; stage?: string; reasonCode?: string | null; message?: string | null; hint?: string | null;
-  electronicSignature?: unknown; updatedAt?: string;
+  electronicSignature?: ElectronicSignature | null; updatedAt?: string;
 };
 export type ApplicantApplication = {
   applicationId: string; status?: string; programCode?: string; programName?: string | null;
@@ -82,3 +84,6 @@ export type ApplicantApplication = {
 };
 export type Created = { applicationId?: string; accessKey?: string; resumeCode?: string; link?: string };
 export type Uploaded = { documentId?: string; fileId?: string; stage?: string; duplicateOf?: string | null; warnings?: string[] };
+
+export type UploadRejection = { name: string; code: string; detail: string; hint?: string | null };
+export type UploadResult = { files: { fileId: string; stage?: string; duplicateOf?: string | null }[]; rejected: UploadRejection[] };

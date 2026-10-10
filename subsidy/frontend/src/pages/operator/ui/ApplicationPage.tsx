@@ -3,18 +3,19 @@ import { Link, useParams } from "react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "motion/react";
 import { AlertTriangle, ArrowLeft, Bot, Building2, ClipboardList, FileText, Gavel, History, ListChecks, MessageSquarePlus, MessageSquareWarning, RefreshCw, ScrollText, UserCheck } from "lucide-react";
-import { AppStatusBadge, dateRuFull, dateTimeRu, decisionView, moneyRu, reviewApi, reviewKeys, waitingRu, type ApplicationData, type FieldCard } from "@/entities/application";
+import { AppStatusBadge, dateRuFull, dateTimeRu, decisionView, moneyRu, reviewApi, reviewKeys, waitingRu, DocumentDetails, type ApplicationData, type FieldCard } from "@/entities/application";
 import { StageBadge, confidenceTone, percent, reasonView, typeTitle } from "@/entities/document";
 import { protocolApi, protocolKeys, useProgramName } from "@/entities/protocol";
 import { can, useSession } from "@/entities/session";
 import { AssistantChat } from "@/features/ask-assistant";
 import { DecisionDialog } from "@/features/decide-application";
 import { RequestDialog } from "@/features/request-resubmit";
+import { EditApplicationButton } from "@/features/manage-application";
+import { UploadDocuments, FileRecoveryActions } from "@/features/manage-documents";
 import { DocumentActions, useAssign, useRebuild } from "@/features/review-document";
 import { ExportProtocolButtons } from "@/features/export-documents";
 import { useTakeNext } from "@/features/take-next";
 import { DocumentViewer } from "@/widgets/document-viewer";
-import { UploadFiles } from "@/features/create-package";
 import { FieldsPanel } from "@/widgets/fields-panel";
 import { HistoryTimeline } from "@/widgets/history-timeline";
 import { ProtocolPanel } from "@/widgets/protocol-panel";
@@ -29,10 +30,11 @@ type Tab = "fields" | "protocol" | "application" | "history" | "assistant";
 const ApplicationData = ({ a }: { a: ApplicationData }) => {
   const rows: [string, string | null | undefined][] = [
     ["Организация", a.orgName], ["ИНН", a.orgInn], ["ОГРН / ОГРНИП", a.ogrn], ["Проект", a.project],
-    ["Запрашиваемая сумма", a.requestedAmount ? moneyRu(a.requestedAmount) : null], ["Дата заявления", a.applicationDate ? dateRuFull(a.applicationDate) : null],
+    ["Запрашиваемая сумма", a.requestedAmount ? moneyRu(a.requestedAmount) : null], ["Общие расходы", a.totalCost ? moneyRu(a.totalCost) : null], ["Собственные средства", a.ownFunds ? moneyRu(a.ownFunds) : null], ["Дата заявления", a.applicationDate ? dateRuFull(a.applicationDate) : null],
     ["Адрес", [a.address?.value, a.address?.purpose].filter(Boolean).join(" · ")],
     ["Подписант", [a.signatory?.fullName, a.signatory?.position].filter(Boolean).join(", ")], ["Основание полномочий", a.signatory?.authority],
   ];
+  if (a.property) rows.push(["Кадастровый номер", a.property.cadastralNumber], ["Площадь", a.property.area], ["Назначение участка", a.property.purpose], ["Адрес участка", a.property.address], ["Правообладатель", a.property.rightHolder]);
   return (
     <dl className="grid gap-x-6 gap-y-3 sm:grid-cols-2">
       {rows.map(([k, v]) => <div key={k} className="min-w-0"><dt className="text-xs text-muted-foreground">{k}</dt><dd className={cn("break-words text-sm font-medium", !v && "text-subtle-foreground")}>{v || "—"}</dd></div>)}
@@ -48,6 +50,7 @@ export const ApplicationPage = () => {
   const qc = useQueryClient();
   const q = useQuery({ queryKey: reviewKeys.card(id), queryFn: () => reviewApi.card(id) });
   const [docId, setDocId] = useState<string | null>(null);
+  const [selectedFileId, setSelectedFileId] = useState<string | null>(null);
   const [field, setField] = useState<FieldCard | null>(null);
   const [jump, setJump] = useState<{ page: number } | null>(null);
   const [tab, setTab] = useState<Tab>("fields");
@@ -65,9 +68,9 @@ export const ApplicationPage = () => {
   const proto = useQuery({ queryKey: protocolKeys.latest(id), queryFn: () => protocolApi.latest(id), retry: false });
   const card = q.data;
   const docs = useMemo(() => card?.documents ?? [], [card]);
-  const doc = docs.find((d) => d.id === docId) ?? docs.find((d) => d.attention) ?? docs[0];
+  const doc = docs.find((d) => d.id === docId) ?? docs.find((d) => d.fileId === selectedFileId) ?? docs.find((d) => d.attention) ?? docs[0];
   const canAct = can(s.roles, "act");
-  useEffect(() => { setField(null); }, [doc?.id]);
+  useEffect(() => { setField(null); }, [doc?.id, doc?.files[0]?.version]);
   useEffect(() => {
     const on = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLElement && e.target.closest("input, textarea, button, [role=dialog]")) return;
@@ -99,7 +102,7 @@ export const ApplicationPage = () => {
   const onEvidence = (documentId: string, page: number | null, fieldName: string | null) => {
     const d = docs.find((x) => x.id === documentId);
     if (!d) return;
-    setDocId(d.id);
+    setDocId(d.id); setSelectedFileId(d.fileId);
     setTab("fields");
     if (page && page >= d.fromPage && page <= d.toPage) setJump({ page: page - d.fromPage + 1 });
     const f = fieldName ? d.fields.find((x) => x.name === fieldName) : null;
@@ -137,11 +140,11 @@ export const ApplicationPage = () => {
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
+          {canAct && !decided && <EditApplicationButton card={card} />}
           {canAct && !mine && !decided && <Button variant="secondary" disabled={assign.isPending} onClick={() => assign.mutate(!!card.assignee)}><UserCheck />{card.assignee ? "Забрать себе" : "Взять в работу"}</Button>}
           {canAct && !decided && <Button variant="secondary" onClick={() => { setAsk(true); setAskOpen(true); }}><MessageSquarePlus />Запросить</Button>}
-          {canAct && !decided && docs.length > 0 && <UploadFiles packageId={id} label="Добавить файлы" />}
           {can(s.roles, "export") && sum && <ExportProtocolButtons packageId={id} />}
-          {can(s.roles, "reprocess") && <Button variant="quiet" disabled={rebuild.isPending} onClick={() => rebuild.mutate(undefined)} title="Пересобрать документы из docproc и пересчитать протокол"><RefreshCw />Пересобрать</Button>}
+          {can(s.roles, "reprocess") && !decided && <Button variant="quiet" disabled={rebuild.isPending} onClick={() => rebuild.mutate(undefined)} title="Пересобрать документы из docproc и пересчитать протокол"><RefreshCw />Пересобрать</Button>}
           {can(s.roles, "decide") && !decided && <Button onClick={() => setDecide(true)} disabled={!sum} title={sum ? undefined : "Решение — после формирования протокола"}><Gavel />Решение</Button>}
         </div>
       </motion.div>
@@ -176,10 +179,10 @@ export const ApplicationPage = () => {
         </Card>
       )}
 
+      {canAct && !decided && <UploadDocuments packageId={id} />}
       {!docs.length ? (
         <div className="grid gap-4 lg:grid-cols-2">
-          <Card><EmptyState icon={<FileText />} title="Документов пока нет" text={card.source === "SPECIALIST" ? "Загрузите документы организации в PDF" : "Заявитель ещё не загрузил файлы"}
-            action={canAct && !decided ? <UploadFiles packageId={id} /> : undefined} /></Card>
+          <Card><EmptyState icon={<FileText />} title="Документов пока нет" text="Загрузите документы заявки" /></Card>
           <ProtocolPanel packageId={id} onEvidence={onEvidence} />
         </div>
       ) : (
@@ -188,7 +191,7 @@ export const ApplicationPage = () => {
             <Card className="h-96 overflow-hidden sm:h-svh lg:h-full">{doc && <DocumentViewer doc={doc} highlight={jump} />}</Card>
           </div>
           <div className="flex min-w-0 flex-col gap-3">
-            <Segmented label="Документы" value={doc?.id ?? ""} onChange={(v) => { setDocId(v); setJump(null); }}
+            <Segmented label="Документы" value={doc?.id ?? ""} onChange={(v) => { setDocId(v); setSelectedFileId(docs.find((d) => d.id === v)?.fileId ?? null); setJump(null); }}
               options={docs.map((d) => ({ value: d.id, icon: d.attention ? <AlertTriangle className="text-warning" /> : undefined,
                 label: d.typeName ?? (d.type ? typeTitle(d.type) : d.real ? "Вид не определён" : d.fileName ?? "Файл") }))} />
             <AnimatePresence mode="wait" initial={false}>
@@ -196,14 +199,17 @@ export const ApplicationPage = () => {
               <motion.div key={doc.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, transition: tween.exit }} transition={{ ...spring.soft, opacity: tween.fast }}>
               <Card className="p-4">
                 <div className="flex flex-wrap items-center gap-2">
-                  <h2 className="font-display text-lg font-semibold">{doc.typeName ?? (doc.type ? typeTitle(doc.type) : doc.real ? "Вид не определён" : "Файл разбирается")}</h2>
+                  <h2 className="font-display text-lg font-semibold">{doc.typeName ?? (doc.type ? typeTitle(doc.type) : doc.real ? "Вид не определён" : "Файл")}</h2>
                   {doc.typeConfidence != null && <Status tone={confidenceTone(doc.typeConfidence)}>вид {percent(doc.typeConfidence)}</Status>}
                   <StageBadge stage={doc.stage} />
                 </div>
                 <p className="mt-1 text-xs text-muted-foreground">{doc.fileName ?? "Файл"}{doc.real ? ` · стр. ${doc.fromPage === doc.toPage ? doc.fromPage : `${doc.fromPage}–${doc.toPage}`}` : ""}{doc.source === "SPECIALIST" ? " · вид указал специалист" : ""}</p>
-                {reason && <p className="mt-2 rounded-md bg-warning-soft px-3 py-2 text-sm text-warning-soft-foreground"><b className="font-medium">{reason.text}</b>{reason.hint ? ` — ${reason.hint}` : ""}</p>}
+                {doc.message && <p className="mt-2 text-sm text-warning">{doc.message}{doc.hint ? ` — ${doc.hint}` : ""}</p>}
+                {reason && !doc.message && <p className="mt-2 rounded-md bg-warning-soft px-3 py-2 text-sm text-warning-soft-foreground"><b className="font-medium">{reason.text}</b>{reason.hint ? ` — ${reason.hint}` : ""}</p>}
                 {doc.evidence && <p className="mt-2 text-xs text-muted-foreground">Почему этот вид: {doc.evidence}</p>}
                 {doc.model && <p className="mt-1 text-xs text-muted-foreground">Модель {doc.model}{doc.promptVersion ? ` · промпт ${doc.promptVersion}` : ""}</p>}
+                {!reason && !doc.message && (doc.stage === "UNREADABLE" || doc.stage === "FAILED") && <p className="mt-2 text-sm text-danger">Сервер не указал причину проблемы. Откройте оригинал и используйте доступные действия восстановления.</p>}
+                {doc.files[0] && <div className="mt-3"><FileRecoveryActions key={`${doc.files[0].id}-${doc.files[0].version}`} packageId={id} file={doc.files[0]} canAct={canAct && !decided} canDownload={canAct} /></div>}
                 <div className="mt-3 empty:hidden"><DocumentActions packageId={id} doc={doc} canAct={canAct && !decided} canReprocess={can(s.roles, "reprocess") && !decided} /></div>
               </Card>
               </motion.div>
@@ -214,7 +220,8 @@ export const ApplicationPage = () => {
               <motion.div key={tab === "fields" ? `f-${doc?.id}` : tab} className="flex flex-col gap-3" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, transition: tween.exit }} transition={{ ...spring.soft, opacity: tween.fast }}>
                 {tab === "fields" && doc && (
                   <>
-                    <FieldsPanel packageId={id} doc={doc} canAct={canAct && !decided} active={field?.name ?? null} onActive={setField} />
+                    <Card className="p-4"><DocumentDetails doc={doc} electronicSignature={doc.electronicSignature} /></Card>
+                    <FieldsPanel key={`${doc.id}-${doc.files[0]?.version}`} packageId={id} doc={doc} canAct={canAct && !decided} active={field?.name ?? null} onActive={setField} />
                     <p className="hidden text-xs text-muted-foreground lg:block">Клавиши: J/K — поле, E — править, N — следующая заявка.{card.submittedAt ? ` Ждёт ${waitingRu((Date.now() - Date.parse(card.submittedAt)) / 1000)}` : ""}</p>
                   </>
                 )}

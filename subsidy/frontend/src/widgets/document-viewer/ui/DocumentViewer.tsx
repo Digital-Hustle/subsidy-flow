@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "motion/react";
 import { ChevronLeft, ChevronRight, RotateCw, ZoomIn, ZoomOut, ImageOff, Lock } from "lucide-react";
@@ -33,11 +33,11 @@ export const DocumentViewer = ({ doc, highlight }: { doc: DocumentCard; highligh
   const [rot, setRot] = useState(0);
   const target = highlight?.page;
   useEffect(() => { if (target && target <= total) setPage(target); }, [target, total]);
-  useEffect(() => { setPage(1); setRot(0); }, [doc.id]);
+  useEffect(() => { setPage(1); setRot(0); }, [doc.id, doc.files[0]?.version]);
   const loc = locate(files, Math.min(page, total));
   const q = useQuery({
     queryKey: ["file", loc?.file.id, loc?.file.version, loc?.page],
-    queryFn: ({ signal }) => apiBlob("package", `/files/${loc!.file.id}/pages/${loc!.page}.png`, signal),
+    queryFn: ({ signal }) => apiBlob("package", `/files/${loc!.file.id}/pages/${loc!.page}.png?version=${loc!.file.version ?? 1}`, signal),
     enabled: !!loc,
     staleTime: Infinity,
     gcTime: 60_000,
@@ -46,8 +46,14 @@ export const DocumentViewer = ({ doc, highlight }: { doc: DocumentCard; highligh
     retryDelay: 1500,
   });
   const forbidden = q.error instanceof ApiError && q.error.status === 403;
-  const src = useMemo(() => (q.data ? URL.createObjectURL(q.data) : null), [q.data]);
-  useEffect(() => () => { if (src) URL.revokeObjectURL(src); }, [src]);
+  const [preview, setPreview] = useState<{ blob: Blob; url: string } | null>(null);
+  useEffect(() => {
+    if (!q.data) return;
+    const url = URL.createObjectURL(q.data);
+    setPreview({ blob: q.data, url });
+    return () => URL.revokeObjectURL(url);
+  }, [q.data]);
+  const src = preview?.blob === q.data ? preview?.url : null;
 
   if (!files.length) return <EmptyState icon={<ImageOff />} title="Файлов нет" text="Файл удалён или ещё загружается" />;
   return (

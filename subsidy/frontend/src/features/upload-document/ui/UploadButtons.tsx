@@ -1,9 +1,10 @@
 import { useRef } from "react";
+import { DOCUMENT_ACCEPT } from "@/entities/document";
 import { Upload } from "lucide-react";
 import { Button, type ButtonProps } from "@/shared/ui";
 
-/** Выбор PDF-файла: заявки на субсидию принимаются только в PDF (сканы и выгрузки с подписью). */
-export const UploadButtons = ({ onFile, disabled, label = "Загрузить PDF", size = "md", variant = "primary" }: {
+/** Выбор документа в одном из форматов исходного кейса. */
+export const UploadButtons = ({ onFile, disabled, label = "Загрузить документ", size = "md", variant = "primary" }: {
   onFile: (f: File) => void; disabled?: boolean; label?: string; size?: ButtonProps["size"]; variant?: ButtonProps["variant"];
 }) => {
   const pick = useRef<HTMLInputElement>(null);
@@ -14,7 +15,7 @@ export const UploadButtons = ({ onFile, disabled, label = "Загрузить PD
   };
   return (
     <div className="flex flex-wrap gap-2">
-      <input ref={pick} type="file" accept="application/pdf,.pdf" hidden onChange={take} />
+      <input ref={pick} type="file" accept={DOCUMENT_ACCEPT} disabled={disabled} hidden onChange={take} />
       <Button size={size} variant={variant} disabled={disabled} onClick={() => pick.current?.click()}><Upload />{label}</Button>
     </div>
   );

@@ -51,7 +51,7 @@ export const typeTitle = (t?: string | null) => (t ? TYPE_TITLE[t] ?? t : "до�
 
 export const reasonView = (code?: string | null, params: Record<string, unknown> = {}) => {
   if (!code) return null;
-  const [text, hint] = REASONS[code] ?? [code];
+  const [text, hint] = REASONS[code] ?? [`Сервер сообщил о проблеме обработки (${code})`];
   return { code, text: fill(text, params), hint: hint && fill(hint, params) };
 };
 

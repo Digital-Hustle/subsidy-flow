@@ -99,7 +99,7 @@ export const ApplyApplicationPage = () => {
     <>
       <PageHeader kicker={<span className="flex flex-wrap items-center gap-2">{app.programName ?? "Заявка на субсидию"} · от {dateTimeRu(app.createdAt)} <AppStatusBadge applicant status={app.status} /></span>}
         title={!hasProfile || editProfile ? "Анкета заявителя" : "Документы заявки"}
-        sub={!hasProfile || editProfile ? "Данные организации и проекта — по ним специалист сверит документы" : "Загрузите каждый документ PDF в свой пункт. Если ошибётесь пунктом — вид документа определим сами"} />
+        sub={!hasProfile || editProfile ? "Данные организации и проекта — по ним специалист сверит документы" : "Загрузите документы в свои пункты: PDF, DOC/DOCX, XLS/XLSX, JPG/PNG. Если ошибётесь пунктом — вид документа определим сами"} />
       <KeyCard id={id} resumeCode={fresh?.resumeCode} />
       {decided && verdict === "APPROVE" && (
         <Card className="mb-4 flex items-start gap-3 bg-success-soft p-4 text-success-soft-foreground"><PartyPopper className="size-5 shrink-0" /><div><p className="font-semibold">Заявка одобрена</p><p className="text-sm">Агентство свяжется с вами по указанным контактам{app.decision?.comment ? `: ${app.decision.comment}` : ""}</p></div></Card>
@@ -119,7 +119,7 @@ export const ApplyApplicationPage = () => {
         </Card>
       )}
       {!hasProfile || editProfile ? (
-        <Card className="p-4 sm:p-6"><ApplicationForm initial={app.application} saving={save.isPending} serverError={formError} onSave={(a) => save.mutate(a)}
+        <Card className="p-4 sm:p-6"><ApplicationForm initial={app.application} programCode={app.programCode} saving={save.isPending} serverError={formError} onSave={(a) => save.mutate(a)}
           submitLabel={hasProfile ? "Сохранить анкету" : undefined} /></Card>
       ) : (
         <>
