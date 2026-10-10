@@ -36,6 +36,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/programs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["programs"];
+        put?: never;
+        post: operations["create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/packages/{packageId}/projection/rebuild": {
         parameters: {
             query?: never;
@@ -100,14 +116,14 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/programs": {
+    "/api/v1/programs/{code}/versions": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        get: operations["programs"];
+        get: operations["versions"];
         put?: never;
         post?: never;
         delete?: never;
@@ -139,7 +155,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["versions"];
+        get: operations["versions_1"];
         put?: never;
         post?: never;
         delete?: never;
@@ -271,6 +287,7 @@ export interface components {
             updatedBy?: string;
             /** Format: date-time */
             updatedAt?: string;
+            accepting?: boolean;
         };
         FieldRq: {
             /** Format: uuid */
@@ -283,6 +300,12 @@ export interface components {
             /** Format: uuid */
             packageId?: string;
             status?: string;
+        };
+        ProgramCreateRq: {
+            code: string;
+            name: string;
+            params: components["schemas"]["JsonNode"];
+            checklist: components["schemas"]["JsonNode"];
         };
         RebuildRs: {
             /** Format: uuid */
@@ -596,6 +619,86 @@ export interface operations {
             };
         };
     };
+    programs: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ItemsProgramRs"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Payload Too Large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProgramCreateRq"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ProgramRs"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Payload Too Large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
     rebuildProjection: {
         parameters: {
             query?: never;
@@ -758,11 +861,13 @@ export interface operations {
             };
         };
     };
-    programs: {
+    versions: {
         parameters: {
             query?: never;
             header?: never;
-            path?: never;
+            path: {
+                code: string;
+            };
             cookie?: never;
         };
         requestBody?: never;
@@ -834,7 +939,7 @@ export interface operations {
             };
         };
     };
-    versions: {
+    versions_1: {
         parameters: {
             query?: never;
             header?: never;

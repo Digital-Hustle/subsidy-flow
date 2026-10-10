@@ -9,7 +9,7 @@ import ru.subsidy.rules.program.ChecklistItem;
 import ru.subsidy.rules.program.Program;
 
 /**
- * Программа: параметры и чек-лист текущей версии.
+ * Программа: параметры и чек-лист версии.
  *
  * @param code код
  * @param version версия
@@ -19,18 +19,21 @@ import ru.subsidy.rules.program.Program;
  * @param checklist чек-лист
  * @param updatedBy автор версии
  * @param updatedAt время версии
+ * @param accepting идёт ли приём заявок (срок params.deadline не прошёл; считает сервер)
  */
 public record ProgramRs(String code, int version, String name, boolean demo, JsonNode params,
-                        List<ChecklistItem> checklist, String updatedBy, OffsetDateTime updatedAt) {
+                        List<ChecklistItem> checklist, String updatedBy, OffsetDateTime updatedAt,
+                        boolean accepting) {
 
     /**
      * Из доменной модели.
      *
      * @param program программа
+     * @param accepting идёт ли приём заявок
      * @return ответ
      */
-    public static ProgramRs of(Program program) {
+    public static ProgramRs of(Program program, boolean accepting) {
         return new ProgramRs(program.code(), program.version(), program.name(), program.demo(),
-                program.params().raw(), program.checklist(), program.createdBy(), program.createdAt());
+                program.params().raw(), program.checklist(), program.createdBy(), program.createdAt(), accepting);
     }
 }

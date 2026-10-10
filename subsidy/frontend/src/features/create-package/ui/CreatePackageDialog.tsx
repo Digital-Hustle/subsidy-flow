@@ -18,7 +18,7 @@ export const CreatePackageButton = () => {
   const nav = useNavigate();
   const qc = useQueryClient();
   const programs = useQuery({ queryKey: protocolKeys.programs, queryFn: protocolApi.programs, enabled: open });
-  const options = (programs.data ?? []).map((p) => ({ value: p.code, label: p.name ?? p.code }));
+  const options = (programs.data ?? []).filter((p) => p.accepting !== false).map((p) => ({ value: p.code, label: p.name ?? p.code }));
   const chosen = program || options[0]?.value || "";
   const create = useMutation({
     mutationFn: () => reviewApi.create(inn, chosen),

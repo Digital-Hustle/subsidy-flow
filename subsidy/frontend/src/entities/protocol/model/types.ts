@@ -15,4 +15,6 @@ export type OrgHistoryEntry = { at?: string; by?: string | null; action?: string
 export type RuleStat = { rule: string; count: number; share: number | string };
 export type Stats = { items?: RuleStat[]; packages?: number; method?: string };
 export type ProgramChecklistItem = { item: string; title?: string; kind?: string; types?: string[]; condition?: string | null; conditionText?: string | null; single?: boolean };
-export type Program = { code: string; version?: number; name?: string; demo?: boolean; params?: Record<string, unknown>; checklist?: ProgramChecklistItem[]; updatedBy?: string | null; updatedAt?: string };
+export type ProgramRule = { code: string; title?: string; op?: string; severity?: string; enabled?: boolean } & Record<string, unknown>;
+export type ProgramParams = { description?: string | null; deadline?: string | null; rules?: ProgramRule[] } & Record<string, unknown>;
+export type Program = { code: string; version?: number; name?: string; demo?: boolean; params?: ProgramParams; checklist?: ProgramChecklistItem[]; updatedBy?: string | null; updatedAt?: string; accepting?: boolean };

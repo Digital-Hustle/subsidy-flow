@@ -1,7 +1,9 @@
 package ru.subsidy.rules.program;
 
 import java.time.Clock;
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.HashSet;
@@ -11,6 +13,7 @@ import org.jooq.DSLContext;
 import org.jooq.JSONB;
 import org.jooq.Record;
 import org.jooq.impl.DSL;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,7 +30,7 @@ import ru.subsidy.rules.jooq.Tables;
 import ru.subsidy.rules.recheck.RecheckRequests;
 
 /**
- * Программы и их версии (FR-35): чтение текущей версии, новая версия — только старшим специалистом.
+ * Программы и их версии (FR-35): чтение, создание и новая версия — только старшим специалистом.
  */
 @Service
 public class ProgramService {
@@ -36,6 +39,10 @@ public class ProgramService {
     private static final String NOT_FOUND = "Программа не найдена: ";
     private static final String ITEM = "item";
     private static final String TITLE = "title";
+    private static final String EXISTS = "Программа с таким кодом уже есть: ";
+    private static final String DESCRIPTION = "description";
+    private static final String DEADLINE = "deadline";
+    private static final int MAX_DESCRIPTION = 2000;
 
     private final DSLContext dsl;
     private final ObjectMapper json;
@@ -98,18 +105,83 @@ public class ProgramService {
     }
 
     /**
-     * Новая версия программы.
+     * Все версии программы, новые первыми.
+     *
+     * @param code код
+     * @return версии
+     * @throws DomainException PROGRAM_NOT_FOUND
+     */
+    @Transactional(readOnly = true)
+    public List<Program> versions(String code) {
+        List<Program> versions = dsl.selectFrom(Tables.PROGRAMS).where(Tables.PROGRAMS.CODE.eq(code))
+                .orderBy(Tables.PROGRAMS.VERSION.desc()).fetch(this::toProgram);
+        if (versions.isEmpty()) {
+            throw new DomainException(ErrorCode.PROGRAM_NOT_FOUND, NOT_FOUND + code);
+        }
+        return versions;
+    }
+
+    /**
+     * Идёт ли приём заявок: срок {@code params.deadline} (включительно) не прошёл по часам сервера.
+     *
+     * @param program программа
+     * @return true, если срока нет или он не прошёл
+     */
+    public boolean accepting(Program program) {
+        return program.params().date(DEADLINE).map(deadline -> !LocalDate.now(clock).isAfter(deadline))
+                .orElse(true);
+    }
+
+    /**
+     * Новая программа (FR-35): версия 1, код уникален.
      *
      * @param code код
      * @param name название
      * @param params параметры
      * @param checklist чек-лист
-     * @param userId старший специалист
+     * @param userId автор
+     * @return программа
+     * @throws DomainException PROGRAM_EXISTS, VALIDATION_ERROR
+     */
+    @Transactional
+    public Program create(String code, String name, JsonNode params, JsonNode checklist, String userId) {
+        validate(params, checklist);
+        if (find(code).isPresent()) {
+            throw new DomainException(ErrorCode.PROGRAM_EXISTS, EXISTS + code);
+        }
+        try {
+            insert(code, 1, name, false, params, checklist, userId);
+        } catch (DuplicateKeyException race) {
+            throw new DomainException(ErrorCode.PROGRAM_EXISTS, EXISTS + code);
+        }
+        return current(code);
+    }
+
+    /**
+     * Новая версия программы (неизвестный код — версия 1, как раньше); нерешённые пакеты программы перепроверяются.
+     *
+     * @param code код
+     * @param name название (null — прежнее)
+     * @param params параметры
+     * @param checklist чек-лист
+     * @param userId автор
      * @return новая версия
-     * @throws DomainException VALIDATION_ERROR при неверной структуре
+     * @throws DomainException VALIDATION_ERROR
      */
     @Transactional
     public Program update(String code, String name, JsonNode params, JsonNode checklist, String userId) {
+        validate(params, checklist);
+        Optional<Program> previous = find(code);
+        String title = name == null || name.isBlank() ? previous.map(Program::name).orElse(code) : name;
+        insert(code, previous.map(Program::version).orElse(0) + 1, title, previous.map(Program::demo).orElse(false),
+                params, checklist, userId);
+        dsl.select(Tables.PACKAGE_VIEW.PACKAGE_ID).from(Tables.PACKAGE_VIEW)
+                .where(Tables.PACKAGE_VIEW.PROGRAM_CODE.eq(code)).and(Tables.PACKAGE_VIEW.STATUS.ne("DECIDED"))
+                .fetch(Tables.PACKAGE_VIEW.PACKAGE_ID).forEach(recheck::request);
+        return current(code);
+    }
+
+    private void validate(JsonNode params, JsonNode checklist) {
         if (params == null || !params.isObject() || checklist == null || !checklist.isArray()) {
             throw new DomainException(ErrorCode.VALIDATION_ERROR, "params — объект, checklist — массив пунктов");
         }
@@ -119,22 +191,41 @@ public class ProgramService {
         } catch (IllegalArgumentException broken) {
             throw new DomainException(ErrorCode.VALIDATION_ERROR, broken.getMessage());
         }
-        Optional<Program> previous = find(code);
-        int version = previous.map(Program::version).orElse(0) + 1;
+        validateDescription(params.get(DESCRIPTION));
+        validateDeadline(params.get(DEADLINE));
+    }
+
+    private static void validateDescription(JsonNode description) {
+        boolean absent = description == null || description.isNull();
+        if (!absent && (!description.isTextual() || description.asText().length() > MAX_DESCRIPTION)) {
+            throw new DomainException(ErrorCode.VALIDATION_ERROR,
+                    "params.description — строка не длиннее " + MAX_DESCRIPTION + " символов");
+        }
+    }
+
+    private static void validateDeadline(JsonNode deadline) {
+        if (deadline == null || deadline.isNull()) {
+            return;
+        }
+        try {
+            LocalDate.parse(deadline.asText());
+        } catch (DateTimeParseException broken) {
+            throw new DomainException(ErrorCode.VALIDATION_ERROR, "params.deadline — дата ГГГГ-ММ-ДД");
+        }
+    }
+
+    private void insert(String code, int version, String name, boolean demo, JsonNode params, JsonNode checklist,
+                        String userId) {
         dsl.insertInto(Tables.PROGRAMS)
                 .set(Tables.PROGRAMS.CODE, code)
                 .set(Tables.PROGRAMS.VERSION, version)
-                .set(Tables.PROGRAMS.NAME, name == null ? previous.map(Program::name).orElse(code) : name)
-                .set(Tables.PROGRAMS.DEMO, previous.map(Program::demo).orElse(false))
+                .set(Tables.PROGRAMS.NAME, name)
+                .set(Tables.PROGRAMS.DEMO, demo)
                 .set(Tables.PROGRAMS.PARAMS, JSONB.valueOf(params.toString()))
                 .set(Tables.PROGRAMS.CHECKLIST, JSONB.valueOf(checklist.toString()))
                 .set(Tables.PROGRAMS.CREATED_BY, userId)
                 .set(Tables.PROGRAMS.CREATED_AT, OffsetDateTime.now(clock))
                 .execute();
-        dsl.select(Tables.PACKAGE_VIEW.PACKAGE_ID).from(Tables.PACKAGE_VIEW)
-                .where(Tables.PACKAGE_VIEW.PROGRAM_CODE.eq(code)).and(Tables.PACKAGE_VIEW.STATUS.ne("DECIDED"))
-                .fetch(Tables.PACKAGE_VIEW.PACKAGE_ID).forEach(recheck::request);
-        return current(code);
     }
 
     private Program toProgram(Record rec) {
