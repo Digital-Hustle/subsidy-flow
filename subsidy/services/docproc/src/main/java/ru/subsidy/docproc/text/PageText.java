@@ -7,8 +7,9 @@ package ru.subsidy.docproc.text;
  * @param text текст
  * @param source TEXT_LAYER, OCR, OCR_WEAK, OFFICE или NONE (текста нет — только картинка)
  * @param tables таблицы страницы текстом (OCR-06) или null
+ * @param quality метрики качества страницы или null (не измерялись / текстовый слой / office)
  */
-public record PageText(int page, String text, String source, String tables) {
+public record PageText(int page, String text, String source, String tables, PageQuality quality) {
 
     /** Текстовый слой PDF. */
     public static final String TEXT_LAYER = "TEXT_LAYER";
@@ -29,7 +30,7 @@ public record PageText(int page, String text, String source, String tables) {
      * @param source источник
      */
     public PageText(int page, String text, String source) {
-        this(page, text, source, null);
+        this(page, text, source, null, null);
     }
 
     /**
@@ -57,7 +58,7 @@ public record PageText(int page, String text, String source, String tables) {
      * @return страница
      */
     public PageText withTables(String rendered) {
-        return new PageText(page, text, source, rendered == null || rendered.isBlank() ? null : rendered);
+        return new PageText(page, text, source, rendered == null || rendered.isBlank() ? null : rendered, quality);
     }
 
     /**

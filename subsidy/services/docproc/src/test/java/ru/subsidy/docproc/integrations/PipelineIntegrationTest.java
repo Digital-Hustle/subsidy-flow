@@ -54,7 +54,10 @@ import ru.subsidy.docproc.queue.FileEventsService;
 import ru.subsidy.docproc.queue.Job;
 import ru.subsidy.docproc.queue.JobQueue;
 import ru.subsidy.docproc.pipeline.PipelineRunner;
+import ru.subsidy.docproc.text.OcrClient;
 import ru.subsidy.docproc.text.PackageClient;
+import ru.subsidy.docproc.text.PageQuality;
+import ru.subsidy.docproc.text.PageText;
 import ru.subsidy.llm.api.LlmGateway;
 import ru.subsidy.llm.api.LlmRequest;
 import ru.subsidy.llm.api.LlmResult;
@@ -80,6 +83,9 @@ class PipelineIntegrationTest extends AbstractIntegrationTest {
 
     @MockitoBean
     private PackageClient files;
+
+    @MockitoBean
+    private OcrClient ocr;
 
     private static CurrentUser user(String role) {
         Jwt token = Jwt.withTokenValue("test").header("alg", "none")
@@ -108,6 +114,7 @@ class PipelineIntegrationTest extends AbstractIntegrationTest {
     @BeforeEach
     void reset() throws IOException {
         MODEL_DOWN.set(false);
+        when(ocr.enabled()).thenReturn(false);
         when(files.download(any(), anyInt())).thenReturn(pdf(
                 "Application for subsidy, INN 7707083893, amount 1 500 000 rub, signed by director",
                 "Invoice number 17 from 01.03.2026, seller INN 1234567890, total 500 000.00"));
@@ -162,6 +169,28 @@ class PipelineIntegrationTest extends AbstractIntegrationTest {
         List<String> types = dsl.select(Tables.OUTBOX.MESSAGE_KEY, Tables.OUTBOX.PAYLOAD).from(Tables.OUTBOX)
                 .where(Tables.OUTBOX.MESSAGE_KEY.eq(ids[0].toString())).fetch(row -> row.value2().data());
         assertThat(String.join("\n", types)).contains("DocumentsSegmented").contains("DocumentParsed");
+    }
+
+    @Test
+    void partialScan_goesToManualReview_withPartialReason() throws Exception {
+        // частично читаемый скан: текст есть, но качество низкое → на ручную проверку, поля не выдумываются (B2-3)
+        // PDF без текстового слоя (пустые страницы) — текст даёт только ocr, с низким качеством первой страницы
+        when(ocr.enabled()).thenReturn(true);
+        when(ocr.extract(any(), any())).thenReturn(List.of(
+                new PageText(1, "Application for subsidy, INN 7707083893", PageText.OCR_WEAK, null,
+                        new PageQuality(40.0, 0.15, 0.0, false, 0.42)),
+                new PageText(2, "Invoice number 17 from 01.03.2026, total 500 000.00", PageText.OCR, null,
+                        new PageQuality(300.0, 0.8, 0.0, false, 0.95))));
+        when(files.download(any(), anyInt())).thenReturn(pdf("", ""));
+        UUID[] ids = received();
+        runner.run(claimFor(ids[0]));
+
+        assertThat(stage(ids[0])).isEqualTo("NEEDS_REVIEW");
+        mockMvc.perform(get("/api/v1/packages/" + ids[1] + "/documents").with(authentication(user("SPECIALIST"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[0].reasonCode").value("PARTIAL_SCAN"))
+                // у второго документа ошибка поля (ИНН 12345) — важнее частичной читаемости
+                .andExpect(jsonPath("$.items[1].reasonCode").value("FIELDS_TO_CHECK"));
     }
 
     @Test
