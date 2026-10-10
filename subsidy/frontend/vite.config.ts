@@ -3,7 +3,7 @@ import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import { fileURLToPath } from "node:url";
 
-// SPA за Caddy: все пути /specialist/** отдаёт index.html.
+// SPA за Caddy: все пути (/apply, /operator, …) отдаёт index.html.
 export default defineConfig({
   base: "/",
   plugins: [react(), tailwindcss()],

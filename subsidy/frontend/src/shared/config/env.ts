@@ -1,7 +1,6 @@
 /**
  * Настройки стенда. Адрес API можно сменить без пересборки: `/config.js` рядом со статикой
- * (в образе — `/srv/config.js`, в compose его можно подменить томом) задаёт `window.SUBSIDY_CONFIG`.
- * Пусто — API того же origin через Caddy (обычный стенд).
+ * задаёт `window.SUBSIDY_CONFIG`. Пусто — API того же origin через Caddy (обычный стенд).
  */
 type RuntimeConfig = { apiBase?: string };
 const runtime = (window as unknown as { SUBSIDY_CONFIG?: RuntimeConfig }).SUBSIDY_CONFIG ?? {};
@@ -12,4 +11,5 @@ export const env = {
   apiBase: base,
   /** API на другом хосте: cookie сессии нужно слать явно. */
   crossOrigin: base !== "" && !base.startsWith(location.origin),
+  uploadMaxMb: Number(import.meta.env.VITE_UPLOAD_MAX_MB ?? 50),
 } as const;

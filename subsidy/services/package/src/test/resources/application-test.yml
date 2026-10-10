@@ -12,3 +12,5 @@ management:
     enabled: false
 STAFF_CODE_PEPPER: test-pepper
 STAFF_SECURE_COOKIE: false
+
+KC_SVC_PACKAGE_SECRET: test-only-secret

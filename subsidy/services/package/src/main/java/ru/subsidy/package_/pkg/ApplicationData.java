@@ -2,6 +2,7 @@ package ru.subsidy.package_.pkg;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -14,22 +15,23 @@ import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 /**
- * Снимок заявки ООО: сведения принадлежат пакету, а не общей карточке организации.
+ * Снимок заявки (ЮЛ или ИП): сведения принадлежат пакету, а не общей карточке организации.
  *
- * @param orgInn ИНН ООО
+ * @param orgInn ИНН: 10 цифр ЮЛ или 12 цифр ИП
  * @param orgName наименование
- * @param ogrn ОГРН
+ * @param ogrn ОГРН (13) или ОГРНИП (15)
  * @param address адрес с назначением
  * @param project проект
  * @param requestedAmount запрашиваемая сумма
  * @param applicationDate дата заявки
  * @param signatory подписант
  * @param property участок, если применимо
+ * @param conditions применимость условных документов для этого проекта; отсутствующий ключ неизвестен
  */
 public record ApplicationData(
-        @NotBlank @Pattern(regexp = "[0-9]{10}") String orgInn,
+        @NotBlank @Pattern(regexp = "[0-9]{10}|[0-9]{12}") String orgInn,
         @NotBlank @Size(max = ApplicationData.NAME_MAX) String orgName,
-        @NotBlank @Pattern(regexp = "[0-9]{13}") String ogrn,
+        @NotBlank @Pattern(regexp = "[0-9]{13}|[0-9]{15}") String ogrn,
         @NotNull @Valid Address address,
         @NotBlank @Size(max = ApplicationData.PROJECT_MAX) String project,
         @NotNull @DecimalMin("0.01") @Digits(integer = ApplicationData.MONEY_DIGITS, fraction = 2)
@@ -37,12 +39,35 @@ public record ApplicationData(
         @JsonFormat(shape = JsonFormat.Shape.STRING) BigDecimal requestedAmount,
         @NotNull LocalDate applicationDate,
         @NotNull @Valid Signatory signatory,
-        @Valid Property property) {
+        @Valid Property property,
+        @Schema(nullable = true, description = "Условия конкретного проекта; отсутствующий ключ — неизвестно")
+        @Size(max = ApplicationData.CONDITIONS_MAX)
+        Map<@Pattern(regexp = "[A-Za-z][A-Za-z0-9_]{0,63}") String, @NotNull Boolean> conditions) {
 
     private static final int NAME_MAX = 500;
     private static final int TEXT_MAX = 2000;
     private static final int PROJECT_MAX = 4000;
     private static final int MONEY_DIGITS = 17;
+    private static final int CONDITIONS_MAX = 50;
+
+    /**
+     * Совместимость с формой без условий проекта.
+     *
+     * @param orgInn ИНН
+     * @param orgName название
+     * @param ogrn ОГРН
+     * @param address адрес
+     * @param project проект
+     * @param requestedAmount сумма
+     * @param applicationDate дата
+     * @param signatory подписант
+     * @param property участок
+     */
+    public ApplicationData(String orgInn, String orgName, String ogrn, Address address, String project,
+                           BigDecimal requestedAmount, LocalDate applicationDate, Signatory signatory,
+                           Property property) {
+        this(orgInn, orgName, ogrn, address, project, requestedAmount, applicationDate, signatory, property, null);
+    }
 
     /**
      * Адрес заявки.

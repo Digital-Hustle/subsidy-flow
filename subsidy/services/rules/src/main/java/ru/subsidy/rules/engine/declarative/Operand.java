@@ -23,6 +23,7 @@ import ru.subsidy.rules.money.Money;
 record Operand(String text, Ref left, int sign, Ref right) {
 
     private static final int RIGHT = 3;
+    private static final String APPLICANT = "APPLICANT";
     private static final Pattern REF = Pattern.compile("([A-Z_]+)\\.([A-Za-z]+)");
     private static final Pattern EXPR = Pattern.compile("\\s*([A-Z_]+\\.[A-Za-z]+)\\s*(?:([+-])\\s*([A-Z_]+\\.[A-Za-z]+)\\s*)?");
 
@@ -99,7 +100,9 @@ record Operand(String text, Ref left, int sign, Ref right) {
         if (!match.matches()) {
             throw Params.invalid(spec, "ссылка «" + text + "»");
         }
-        Params.requireType(spec, match.group(1));
+        if (!APPLICANT.equals(match.group(1))) {
+            Params.requireType(spec, match.group(1));
+        }
         return new Ref(match.group(1), match.group(2));
     }
 
@@ -118,12 +121,22 @@ record Operand(String text, Ref left, int sign, Ref right) {
          * @return значение или пусто
          */
         Optional<Value> resolve(Scope scope) {
+            if (APPLICANT.equals(type)) {
+                return applicant(scope);
+            }
             DocFacts doc = scope.first(type);
             if (doc == null) {
                 return Optional.empty();
             }
             return doc.money(field)
                     .map(amount -> new Value(amount, Texts.where(doc, field), List.of(Evidence.of(doc, field))));
+        }
+
+        private Optional<Value> applicant(Scope scope) {
+            return Optional.ofNullable(scope.facts().application()).map(application -> application.path(field))
+                    .filter(node -> !node.isNull() && !node.asText().isBlank())
+                    .map(node -> new Value(Money.parse(node.asText()), "Сохранённая заявка: " + Docs.field(field),
+                            List.of(new Evidence(null, "application." + field, null))));
         }
 
         /**

@@ -39,6 +39,9 @@ public class FieldValidator {
     private static final Pattern INN_FORMAT = Pattern.compile("\\d{10}|\\d{12}");
     private static final Pattern OGRN_FORMAT = Pattern.compile("\\d{13}|\\d{15}");
     private static final String PRICE = "price";
+    private static final String ADDRESSES = "addresses";
+    private static final String ADDRESS = "address";
+    private static final String PURPOSE = "purpose";
     private static final int SCALE = 3;
     private static final BigDecimal DEFAULT_CONFIDENCE = new BigDecimal("0.700");
 
@@ -110,6 +113,7 @@ public class FieldValidator {
             case ACCOUNT -> requisite(digits(raw), bik == null || Requisites.account(digits(raw), bik),
                     "Расчётный счёт", checks);
             case "items" -> items(raw);
+            case ADDRESSES -> addressList(raw);
             case null, default -> raw;
         };
     }
@@ -156,6 +160,28 @@ public class FieldValidator {
                 }
             }
             out.add(row);
+        }
+        return out;
+    }
+
+    /**
+     * Адреса с назначением: текст как в документе, пустые строки отбрасываем. Сверка адресов — в rules (B3), здесь
+     * только пропускаем значения дальше без нормализации.
+     *
+     * @param raw массив {address, purpose} от модели
+     * @return массив непустых строк
+     */
+    private JsonNode addressList(JsonNode raw) {
+        ArrayNode out = json.createArrayNode();
+        for (JsonNode item : raw) {
+            String address = item.path(ADDRESS).asText("").strip();
+            String purpose = item.path(PURPOSE).asText("").strip();
+            if (!address.isEmpty() || !purpose.isEmpty()) {
+                ObjectNode row = json.createObjectNode();
+                row.put(ADDRESS, address.isEmpty() ? null : address);
+                row.put(PURPOSE, purpose.isEmpty() ? null : purpose);
+                out.add(row);
+            }
         }
         return out;
     }

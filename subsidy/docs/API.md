@@ -23,7 +23,7 @@
 - `GET /organizations?inn=` → организация или 404; `POST /organizations` `{inn}` → 201 (ИНН проверяется контрольной суммой, `INN_INVALID`)
 - `POST /packages` `{orgInn, programCode, application?}` → 201 `{packageId, status: COLLECTING}` (`Idempotency-Key`)
 - `GET /packages?status=&inn=&program=&cursor=` → очередь: `{id, org, program, status, completeness, failed, warnings, needsReview, updatedAt}`
-- `POST /packages/{id}/files` multipart `files[]` (только PDF) → **202** `{files: [{fileId, stage: RECEIVED, duplicateOf?}], rejected: [{name, code, detail, hint}]}` — отказ одного файла не отменяет остальные
+- `POST /packages/{id}/files` multipart `files[]` (файлы или ZIP) → **202** `{files: [{fileId, stage: RECEIVED, duplicateOf?}], rejected: [{name, code, detail, hint}]}` — отказ одного файла не отменяет остальные
 - `POST /packages/{id}/files/{fileId}/versions` multipart `file` → 202 (замена / повторная загрузка, FR-65)
 - `DELETE /packages/{id}/files/{fileId}` → 204
 - `GET /packages/{id}` → `{packageId, status, org, program, protocol: {status, completeness, failed, warnings, needsReview}|null, decision: {decision, comment, decidedBy, decidedAt}|null, updatedAt, files: [{fileId, version, name, mime, pages, stage, reasonCode?, documents: [{documentId, fromPage, toPage, type, typeConfidence, source, stage}]}]}`
@@ -41,7 +41,7 @@
 - `POST /applicant/resume` `{phoneOrEmail, resumeCode}` → 200 `{applicationId, accessKey, resumeCode, link}` (новый ключ, старый перестаёт работать); неверно → 404 `APPLICATION_NOT_FOUND`, 5 попыток → 429 `RATE_LIMITED`.
 - `GET /applicant/applications/{id}` → `{applicationId, status, programCode, programName, application, applicationRevision, requiredDocuments: [{type, title, hint, required, condition?}], documents: [{id, fileId, slotType, detectedType, detectedTypeName, fileName, pages, stage, reasonCode?, message?, hint?, electronicSignature?, updatedAt}], missing: [type], operatorRequests: [{id, type?, documentId?, reason, createdAt, resolvedAt?}], decision: {decision, comment, decidedAt}|null, submittedAt?, updatedAt}` — **без извлечённых полей и проверок** (их видит только специалист).
 - `PUT /applicant/applications/{id}/application` `{expectedRevision, application}` → `{applicationRevision, requiredDocuments}` — полная замена анкеты (как `PUT /packages/{id}/application`), до отправки и в `NEEDS_FIX`; чек-лист считает сервер по программе и анкете; неверный ИНН/ОГРН → 400 `VALIDATION_ERROR` с `field`; конфликт ревизии → 409. Черновик можно сохранять частично (`application` с `null`-полями), полнота проверяется на `submit`.
-- `POST /applicant/applications/{id}/documents?slotType=` multipart `file` (только PDF по байтам, как у специалиста) → **202** `{documentId, fileId, stage: RECEIVED, duplicateOf?, warnings: []}` (`Idempotency-Key`); коды отказа — таблица «Коды отказов приёма». `slotType` — подсказка, вид документа всё равно определяется по содержимому.
+- `POST /applicant/applications/{id}/documents?slotType=` multipart `file` (файл или ZIP; формат по байтам, как у специалиста) → **202** `{documentId, fileId, stage: RECEIVED, duplicateOf?, warnings: []}` (`Idempotency-Key`); коды отказа — таблица «Коды отказов приёма». `slotType` — подсказка, вид документа всё равно определяется по содержимому.
 - `POST /applicant/applications/{id}/documents/{docId}/files?mode=add|replace` multipart `file` → 202 — добавить страницу / заменить файл.
 - `DELETE /applicant/applications/{id}/documents/{docId}` → 204 (до решения); `DELETE /applicant/applications/{id}` → 204 — удалить заявку и отозвать согласие (файлы всех версий, анкета, контакты).
 - `POST /applicant/applications/{id}/submit` → `{status: SUBMITTED, missing: []}`; не хватает обязательных документов или полей анкеты → 422 `DOCUMENTS_MISSING` `{missing, missingFields}`. После отправки пакет попадает в очередь специалиста.
@@ -100,7 +100,7 @@
 |---|---|---|---|
 | FILE_EMPTY | 400 | Файл пустой | Выберите файл ещё раз |
 | FILE_TOO_LARGE | 413 | Файл больше {max} МБ | Разделите документ или уменьшите разрешение скана |
-| FILE_TYPE_UNSUPPORTED | в rejected[] ответа 202 | Принимаются только документы PDF | Сохраните документ в PDF; изображения, Office и ZIP не принимаются |
+| FILE_TYPE_UNSUPPORTED | в rejected[] ответа 202 | Такой формат не поддерживается | Подойдут PDF, JPG, PNG, TIFF, HEIC, DOCX, XLSX, ZIP |
 | FILE_CORRUPTED | 422 | Файл повреждён и не открывается | Сохраните документ заново |
 | PDF_ENCRYPTED | 422 | PDF защищён паролем | Снимите пароль и загрузите снова |
 | TOO_MANY_PAGES | 422 | Слишком много страниц ({max}) | Разделите файл |
@@ -144,9 +144,9 @@
 - `GET /package/api/v1/packages/{id}`: дополнительно `application`, `applicationRevision`; имя организации берётся из снимка заявки.
 - `PUT /package/api/v1/packages/{id}/application`: `{expectedRevision, application}`; полная замена, SPECIALIST/SENIOR. Конфликт версии или решённый пакет → 409; отсутствующий пакет → 404.
 - `GET /package/api/v1/packages/{id}/application/history`: `{items:[{revision, changedBy, changedAt, before, after}]}`, доступ также AUDITOR. История только дополняется.
-- application: `orgInn` (10 цифр, ООО), `orgName`, `ogrn` (13 цифр), `address:{value,purpose}` (LEGAL/ACTUAL/PROJECT), `project`, `requestedAmount` (положительная десятичная строка, 2 знака), `applicationDate` (ISO date), `signatory:{fullName,position,authority}`, опциональный `property:{cadastralNumber,address,rightType}` (OWNERSHIP/LEASE/USE).
-- Приём и замена: разрешён только PDF по байтам, независимо от имени и Content-Type. Изображения/Office/ZIP → `FILE_TYPE_UNSUPPORTED`, hint: сохраните в PDF.
-- Текущая версия файла содержит `electronicSignature:{status,present,reason,cryptographicallyVerified}`: PRESENT/ABSENT/UNKNOWN, present=true/false/null. Проверяется структура PDF, а не криптографическая действительность; cryptographicallyVerified всегда false. Для старых версий UNKNOWN/NOT_INSPECTED.
+- application: `orgInn` (10 цифр ЮЛ или 12 цифр ИП), `orgName`, `ogrn` (13 цифр ОГРН или 15 цифр ОГРНИП), `address:{value,purpose}` (LEGAL/ACTUAL/PROJECT), `project`, `requestedAmount` (положительная десятичная строка, 2 знака), `applicationDate` (ISO date), `signatory:{fullName,position,authority}`, опциональный `property:{cadastralNumber,address,rightType}` (OWNERSHIP/LEASE/USE).
+- Приём и замена: форматы по FR-03 (PDF, JPG, PNG, TIFF, HEIC, DOCX, XLSX, ZIP) определяются по байтам, независимо от имени и Content-Type.
+- Текущая версия файла содержит `electronicSignature` (для PDF; у остальных форматов UNKNOWN/NOT_INSPECTED):{status,present,reason,cryptographicallyVerified}`: PRESENT/ABSENT/UNKNOWN, present=true/false/null. Проверяется структура PDF, а не криптографическая действительность; cryptographicallyVerified всегда false. Для старых версий UNKNOWN/NOT_INSPECTED.
 - Изменение заявки публикует `PackageApplicationChanged` через outbox; rules хранит новую ревизию и запускает перепроверку. `PackageChecked.applicationRevision` не позволяет старой проверке подтвердить новую заявку.
 # Контракт Backend 3 (B3-1…B3-6)
 

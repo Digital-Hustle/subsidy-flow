@@ -4,6 +4,7 @@ import java.time.Clock;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.HashSet;
 import java.util.Optional;
 
 import org.jooq.DSLContext;
@@ -20,6 +21,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import ru.subsidy.common.exception.DomainException;
 import ru.subsidy.common.exception.ErrorCode;
 import ru.subsidy.rules.engine.declarative.ProgramRules;
+import ru.subsidy.rules.engine.Docs;
 import ru.subsidy.rules.engine.rules.ProgramRulesRule;
 import ru.subsidy.rules.jooq.Tables;
 import ru.subsidy.rules.recheck.RecheckRequests;
@@ -32,6 +34,8 @@ public class ProgramService {
 
     private static final String LATEST = "latest";
     private static final String NOT_FOUND = "Программа не найдена: ";
+    private static final String ITEM = "item";
+    private static final String TITLE = "title";
 
     private final DSLContext dsl;
     private final ObjectMapper json;
@@ -148,17 +152,25 @@ public class ProgramService {
 
     private static List<ChecklistItem> parseChecklist(JsonNode checklist) {
         List<ChecklistItem> items = new ArrayList<>();
+        var codes = new HashSet<String>();
         for (JsonNode node : checklist) {
             List<String> types = new ArrayList<>();
             node.path("types").forEach(type -> types.add(type.asText()));
             String kind = node.path("kind").asText(ChecklistItem.REQUIRED);
             if (types.isEmpty() || !List.of(ChecklistItem.REQUIRED, ChecklistItem.ONE_OF, ChecklistItem.CONDITIONAL)
-                    .contains(kind)) {
+                    .contains(kind) || types.stream().anyMatch(type -> !Docs.known(type))) {
                 throw new DomainException(ErrorCode.VALIDATION_ERROR,
                         "Пункт чек-листа: kind REQUIRED|ONE_OF|CONDITIONAL и непустой types");
             }
-            items.add(new ChecklistItem(node.path("item").asText(), node.path("title").asText(), kind, types,
-                    node.path("condition").asText(null), node.path("conditionText").asText(null),
+            String item = node.path(ITEM).asText();
+            String condition = node.path("condition").asText(null);
+            if (item.isBlank() || node.path(TITLE).asText().isBlank() || !codes.add(item)
+                    || condition != null && !condition.matches("[A-Za-z][A-Za-z0-9_]{0,63}")) {
+                throw new DomainException(ErrorCode.VALIDATION_ERROR,
+                        "Пункт чек-листа: уникальный item, title и condition — код условия проекта");
+            }
+            items.add(new ChecklistItem(item, node.path(TITLE).asText(), kind, types,
+                    condition, node.path("conditionText").asText(null),
                     node.path("single").asBoolean(false)));
         }
         return items;

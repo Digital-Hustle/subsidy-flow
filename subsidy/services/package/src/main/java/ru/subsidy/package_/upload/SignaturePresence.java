@@ -1,5 +1,7 @@
 package ru.subsidy.package_.upload;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
 /**
  * Наличие встроенной ЭП; криптографическая действительность не проверяется.
  *
@@ -8,7 +10,8 @@ package ru.subsidy.package_.upload;
  * @param reason причина неопределённости или null
  * @param cryptographicallyVerified всегда false
  */
-public record SignaturePresence(String status, Boolean present, String reason, boolean cryptographicallyVerified) {
+public record SignaturePresence(String status, @Schema(nullable = true) Boolean present, String reason,
+                                boolean cryptographicallyVerified) {
 
     private static final String UNKNOWN = "UNKNOWN";
     private static final String PRESENT = "PRESENT";

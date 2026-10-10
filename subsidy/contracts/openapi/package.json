@@ -1427,7 +1427,7 @@
           "orgInn" : {
             "type" : "string",
             "minLength" : 1,
-            "pattern" : "[0-9]{10}"
+            "pattern" : "[0-9]{10}|[0-9]{12}"
           },
           "orgName" : {
             "type" : "string",
@@ -1437,7 +1437,7 @@
           "ogrn" : {
             "type" : "string",
             "minLength" : 1,
-            "pattern" : "[0-9]{13}"
+            "pattern" : "[0-9]{13}|[0-9]{15}"
           },
           "address" : {
             "$ref" : "#/components/schemas/Address"
@@ -1460,6 +1460,13 @@
           },
           "property" : {
             "$ref" : "#/components/schemas/Property"
+          },
+          "conditions" : {
+            "type" : [ "object", "null" ],
+            "additionalProperties" : {
+              "type" : "boolean"
+            },
+            "description" : "Условия конкретного проекта; отсутствующий ключ — неизвестно"
           }
         },
         "required" : [ "address", "applicationDate", "ogrn", "orgInn", "orgName", "project", "requestedAmount", "signatory" ]
@@ -2097,7 +2104,7 @@
             "type" : "string"
           },
           "present" : {
-            "type" : "boolean"
+            "type" : [ "boolean", "null" ]
           },
           "reason" : {
             "type" : "string"

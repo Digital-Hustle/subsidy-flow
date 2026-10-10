@@ -32,6 +32,7 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/actuator/health/**", "/actuator/health", "/v3/api-docs/**").permitAll()
+                        .requestMatchers("/internal/rules/programs/**").hasAuthority("SVC_PACKAGE")
                         .requestMatchers("/internal/**").hasAuthority("SVC_ASSISTANT")
                         .anyRequest().authenticated())
                 .exceptionHandling(errors -> errors.authenticationEntryPoint(ProblemSecurity.entryPoint())

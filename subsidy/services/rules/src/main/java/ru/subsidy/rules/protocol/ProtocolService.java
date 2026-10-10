@@ -220,7 +220,7 @@ public class ProtocolService {
     private static int needsReview(PackageFacts facts, List<RuleResult> results) {
         long docs = facts.documents().stream().filter(ProtocolService::docNeedsReview).count();
         long files = facts.files().stream().filter(FileFacts::broken).count();
-        return (int) (docs + files) + count(results, RuleStatus.ERROR);
+        return (int) (docs + files) + count(results, RuleStatus.ERROR) + count(results, RuleStatus.DATA_MISSING);
     }
 
     private static boolean docNeedsReview(DocFacts doc) {

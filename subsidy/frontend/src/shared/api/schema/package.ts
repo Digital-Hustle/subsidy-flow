@@ -423,6 +423,10 @@ export interface components {
             applicationDate: string;
             signatory: components["schemas"]["Signatory"];
             property?: components["schemas"]["Property"];
+            /** @description Условия конкретного проекта; отсутствующий ключ — неизвестно */
+            conditions?: {
+                [key: string]: boolean;
+            } | null;
         };
         Property: {
             cadastralNumber: string;
@@ -657,7 +661,7 @@ export interface components {
         };
         SignaturePresence: {
             status?: string;
-            present?: boolean;
+            present?: boolean | null;
             reason?: string;
             cryptographicallyVerified?: boolean;
         };

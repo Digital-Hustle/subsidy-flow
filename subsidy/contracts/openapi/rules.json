@@ -213,6 +213,52 @@
         }
       }
     },
+    "/internal/rules/programs/{code}" : {
+      "get" : {
+        "tags" : [ "internal-programs-controller-impl" ],
+        "operationId" : "program_1",
+        "parameters" : [ {
+          "name" : "code",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "400" : {
+            "description" : "Bad Request",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "413" : {
+            "description" : "Payload Too Large",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProgramLookupRs"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/internal/rules/packages/{packageId}/facts" : {
       "get" : {
         "tags" : [ "internal-facts-controller-impl" ],
@@ -868,6 +914,18 @@
           }
         }
       },
+      "ProgramLookupRs" : {
+        "type" : "object",
+        "properties" : {
+          "code" : {
+            "type" : "string"
+          },
+          "version" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }
+      },
       "DocFacts" : {
         "type" : "object",
         "properties" : {
@@ -954,6 +1012,9 @@
           },
           "reasonCode" : {
             "type" : "string"
+          },
+          "electronicSignature" : {
+            "$ref" : "#/components/schemas/SignatureFacts"
           }
         }
       },
@@ -1074,6 +1135,23 @@
           },
           "actual" : {
             "type" : "string"
+          }
+        }
+      },
+      "SignatureFacts" : {
+        "type" : "object",
+        "properties" : {
+          "status" : {
+            "type" : "string"
+          },
+          "present" : {
+            "type" : [ "boolean", "null" ]
+          },
+          "reason" : {
+            "type" : "string"
+          },
+          "cryptographicallyVerified" : {
+            "type" : "boolean"
           }
         }
       },

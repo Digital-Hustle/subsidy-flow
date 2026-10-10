@@ -83,11 +83,31 @@ class CompletenessEngineTest {
     }
 
     @Test
-    void conditionFlagMakesDocumentRequired() {
+    void programFlagDoesNotSetProjectApplicability() {
         Completeness result = new CompletenessEngine().check(facts(doc(APPLICATION, null), doc(BANK, null)),
                 program(true));
-        assertThat(result.missing()).extracting(Missing::item).containsExactly(CERTIFICATE);
-        assertThat(status(result, "CHK_CONDITIONAL")).isEqualTo(RuleStatus.FAILED);
+        assertThat(result.missing()).isEmpty();
+        assertThat(status(result, "CHK_CONDITIONAL")).isEqualTo(RuleStatus.WARNING);
+        assertThat(result.items()).filteredOn(item -> CERTIFICATE.equals(item.item()))
+                .singleElement().extracting(ItemResult::applicable).isNull();
+    }
+
+    @Test
+    void sameProgramDifferentProjects_trueWarns_falseIsNotApplicable_unknownIsExplicit() {
+        PackageFacts base = facts(doc(APPLICATION, null), doc(BANK, null));
+        var applicable = new PackageFacts(base.packageId(), base.inn(), base.programCode(), base.packageDate(),
+                base.documents(), base.files(), 1, JSON.valueToTree(Map.of("conditions", Map.of("needsCertificate", true))));
+        var irrelevant = new PackageFacts(UUID.randomUUID(), base.inn(), base.programCode(), base.packageDate(),
+                base.documents(), base.files(), 1, JSON.valueToTree(Map.of("conditions", Map.of("needsCertificate", false))));
+        Completeness needed = new CompletenessEngine().check(applicable, program(false));
+        Completeness notNeeded = new CompletenessEngine().check(irrelevant, program(true));
+        assertThat(status(needed, "CHK_CONDITIONAL")).isEqualTo(RuleStatus.WARNING);
+        assertThat(needed.missing()).isEmpty();
+        assertThat(needed.percent()).isEqualTo(66);
+        assertThat(needed.request()).contains("Сертификат");
+        assertThat(status(notNeeded, "CHK_CONDITIONAL")).isEqualTo(RuleStatus.NOT_APPLICABLE);
+        assertThat(notNeeded.percent()).isEqualTo(100);
+        assertThat(notNeeded.request()).isNull();
     }
 
     @Test

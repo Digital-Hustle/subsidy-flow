@@ -24,6 +24,8 @@ final class Fixture {
     static final LocalDate PACKAGE_DATE = LocalDate.of(2026, 3, 20);
 
     private final List<DocFacts> docs = new ArrayList<>();
+    private JsonNode application;
+    private String signatureStatus;
 
     private Fixture() {
     }
@@ -45,8 +47,20 @@ final class Fixture {
     }
 
     PackageFacts facts() {
+        List<FileFacts> files = docs.stream().map(doc -> new FileFacts(doc.fileId(), 1, "PARSED", null,
+                ru.subsidy.rules.facts.SignatureFacts.stored(signatureStatus, "TEST_UNKNOWN"))).toList();
         return new PackageFacts(UUID.randomUUID(), APPLICANT, "INNOVATION", PACKAGE_DATE, docs,
-                List.of(new FileFacts(UUID.randomUUID(), 1, "PARSED", null)));
+                files, application == null ? 0 : 1, application);
+    }
+
+    Fixture application(JsonNode value) {
+        application = value;
+        return this;
+    }
+
+    Fixture signature(String value) {
+        signatureStatus = value;
+        return this;
     }
 
     static ProgramParams params() {
