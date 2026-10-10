@@ -41,7 +41,9 @@ export const StartForm = ({ onCreated }: { onCreated?: (r: { id: string; key: st
     <form className="flex flex-col gap-5" onSubmit={(e) => { e.preventDefault(); setTouched(true); if (ready && !m.isPending) m.mutate(); }}>
       <Field label="Программа поддержки" hint={chosen?.description ?? (chosen?.deadline ? `Приём заявок до ${dateRuFull(chosen.deadline)}` : undefined)}
         error={programs.isError ? "Не удалось загрузить программы — обновите страницу" : null}>
-        {programs.isPending ? <Skeleton className="h-control-lg rounded-md" /> : (
+        {programs.isPending ? <Skeleton className="h-control-lg rounded-md" /> : !list.length ? (
+          <Input disabled aria-label="Программа" placeholder={programs.isError ? "Программы недоступны" : "Сейчас нет открытых программ"} />
+        ) : (
           <Select aria-label="Программа" value={code} onChange={setProgram} placeholder="Выберите программу"
             options={list.map((p) => ({ value: p.code, label: p.name ?? p.code, hint: p.deadline ? `до ${dateRuFull(p.deadline)}` : undefined }))} />
         )}
