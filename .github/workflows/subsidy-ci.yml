@@ -96,7 +96,7 @@ jobs:
         working-directory: subsidy/services
         run: |
           ./gradlew --no-daemon :${{ matrix.svc.name }}:exportOpenApi
-          git diff --exit-code -- ../contracts/openapi/
+          ../scripts/check-openapi.sh
       - uses: mikepenz/action-junit-report@v5
         if: always() && matrix.svc.kind == 'java'
         with:

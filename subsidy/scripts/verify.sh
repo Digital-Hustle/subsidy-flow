@@ -39,7 +39,8 @@ for p in "${parts[@]}"; do
               elif py_svc "$s"; then check_py "$s"; fi ;;
     contract) if [ -f services/settings.gradle.kts ]; then
                 (cd services && run ./gradlew -q exportOpenApi)
-                git diff --exit-code -- contracts/ \
+                scripts/check-openapi.sh \
+                  && git diff --exit-code -- contracts/ ':!contracts/openapi' \
                   || { echo "✖ contracts/ устарели — закоммить перегенерированные файлы"; exit 1; }
               fi ;;
     frontend) [ -f frontend/package.json ] && (cd frontend && run npm ci --silent && run npm run gen:api \
