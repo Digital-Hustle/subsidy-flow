@@ -92,11 +92,10 @@ class Llm:
             }
         else:
             url = self.base + "/chat/completions"
-            body = {
-                "model": self.model, "messages": msgs, "temperature": 0, "seed": SEED,
-                "response_format": {"type": "json_schema",
-                                    "json_schema": {"name": "answer", "strict": False, "schema": schema}},
-            }
+            # как в проде (LLM_JSON_MODE=json_object): схема — подсказкой в системном промпте
+            msgs[0]["content"] += "\n\nОтветь строго JSON по схеме:\n" + json.dumps(schema, ensure_ascii=False)
+            body = {"model": self.model, "messages": msgs, "temperature": 0,
+                    "response_format": {"type": "json_object"}}
         rq = urllib.request.Request(url, data=json.dumps(body).encode(), method="POST",
                                     headers={"Content-Type": "application/json",
                                              **({"Authorization": f"Bearer {self.key}"} if self.key else {})})
@@ -166,7 +165,12 @@ def run(llm: Llm, seeds: int) -> dict[str, Any]:
             for name, truth in labels["files"].items():
                 pages = pages_of(out / name)
                 started = time.monotonic()
-                answer = llm.ask(seg_system, segment_user(pages), segment_schema(types))
+                truth = [seg for seg in truth if seg["type"] in by_code]  # синтетика шире реестра
+                try:
+                    answer = llm.ask(seg_system, segment_user(pages), segment_schema(types))
+                except Exception as e:  # noqa: BLE001
+                    answer = {}
+                    misses.append(f"seed {seed} {name}: segment error {e}")
                 got = page_types(answer.get("segments", []), len(pages))
                 for seg in truth:
                     for p in range(seg["fromPage"], seg["toPage"] + 1):
@@ -179,7 +183,11 @@ def run(llm: Llm, seeds: int) -> dict[str, Any]:
                     text = "\n\n".join(pages[seg["fromPage"] - 1:seg["toPage"]])[:MAX_CHARS_PER_DOCUMENT]
                     system = prompt("extract.v1").replace("{{TYPE_NAME}}", doc_type["name"]) \
                         .replace("{{TYPE_CODE}}", doc_type["code"])
-                    data = llm.ask(system, text, extract_schema(doc_type)).get("data", {}) or {}
+                    try:
+                        data = llm.ask(system, text, extract_schema(doc_type)).get("data", {}) or {}
+                    except Exception as e:  # noqa: BLE001
+                        data = {}
+                        misses.append(f"seed {seed} {seg['type']}: extract error {e}")
                     docs += 1
                     for field, expected in seg["fields"].items():
                         kind = doc_type["kinds"].get(field, "text")

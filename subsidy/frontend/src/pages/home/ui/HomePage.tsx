@@ -67,7 +67,7 @@ export const HomePage = () => {
   const stats = [
     { value: 10, label: "видов документов" },
     { value: 7, label: "форматов: PDF, DOCX, XLSX, JPG, PNG, TIFF, HEIC" },
-    { value: env.uploadMaxMb, label: "МБ — предел одного файла" },
+    { value: Math.round(env.uploadMaxMb / 1024), label: "ГБ — предел одного файла" },
     { value: 3, label: "роли сотрудников" },
   ];
   return (
