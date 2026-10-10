@@ -1,0 +1,6 @@
+# Журналы MEMORY.md только дописываются — параллельные ветки склеиваются без конфликта (subsidy/docs/WORKFLOW.md §5)
+subsidy/**/MEMORY.md merge=union
+# Сгенерированные файлы: не мержим руками, а перегенерируем; в диффе PR свёрнуты
+.agents/skills/frontend-fsd/assets/theme.css linguist-generated=true
+subsidy/frontend/src/app/styles/theme.css linguist-generated=true
+subsidy/contracts/openapi/*.json linguist-generated=true
