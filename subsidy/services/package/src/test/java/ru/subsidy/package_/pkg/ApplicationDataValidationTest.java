@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -17,6 +18,19 @@ class ApplicationDataValidationTest {
         return new ApplicationData("7707083893", "ООО Тест", "1027700132195",
                 new ApplicationData.Address("Москва", "LEGAL"), "Проект", new BigDecimal(amount),
                 LocalDate.of(2026, 10, 10), new ApplicationData.Signatory("Подписант", "Директор", "Устав"), property);
+    }
+
+    @Test
+    void conditionsBelongToApplication_andKeysAndValuesAreValidated() {
+        ApplicationData base = application("1.00", null);
+        var valid = new ApplicationData(base.orgInn(), base.orgName(), base.ogrn(), base.address(), base.project(),
+                base.requestedAmount(), base.applicationDate(), base.signatory(), null, Map.of("needsCertificate", true));
+        var invalid = new ApplicationData(base.orgInn(), base.orgName(), base.ogrn(), base.address(), base.project(),
+                base.requestedAmount(), base.applicationDate(), base.signatory(), null, Map.of("invalid.key", false));
+        try (var factory = Validation.buildDefaultValidatorFactory()) {
+            assertThat(factory.getValidator().validate(valid)).isEmpty();
+            assertThat(factory.getValidator().validate(invalid)).isNotEmpty();
+        }
     }
 
     @Test

@@ -32,6 +32,41 @@
         "integer",
         "null"
       ]
+    },
+    "electronicSignature": {
+      "type": "object",
+      "required": [
+        "status",
+        "present",
+        "reason",
+        "cryptographicallyVerified"
+      ],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": [
+            "PRESENT",
+            "ABSENT",
+            "UNKNOWN"
+          ]
+        },
+        "present": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "reason": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "cryptographicallyVerified": {
+          "const": false
+        }
+      },
+      "additionalProperties": false
     }
   },
   "additionalProperties": false

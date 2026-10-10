@@ -2,16 +2,15 @@ package ru.subsidy.package_.pkg;
 
 import java.time.Clock;
 import java.time.OffsetDateTime;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
 import org.jooq.DSLContext;
 import org.jooq.Record;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import com.github.f4b6a3.uuid.UuidCreator;
 
@@ -36,7 +35,8 @@ public class PackageService {
     private final DSLContext dsl;
     private final Clock clock;
     private final OrganizationService organizations;
-    private final List<String> programs;
+    private final ProgramCatalogClient programs;
+    private final TransactionTemplate transactions;
     private final OutboxWriter outbox;
     private final ApplicationService applications;
 
@@ -49,14 +49,16 @@ public class PackageService {
      * @param programs доступные программы
      * @param outbox outbox событий
      * @param applications заявки
+     * @param transactions короткая транзакция записи после проверки каталога
      */
     public PackageService(DSLContext dsl, Clock clock, OrganizationService organizations,
-                          @Value("${subsidy.programs:INNOVATION,BEACH,MODERNIZATION}") List<String> programs,
-                          OutboxWriter outbox, ApplicationService applications) {
+                          ProgramCatalogClient programs, OutboxWriter outbox, ApplicationService applications,
+                          TransactionTemplate transactions) {
         this.dsl = dsl;
         this.clock = clock;
         this.organizations = organizations;
-        this.programs = List.copyOf(programs);
+        this.programs = programs;
+        this.transactions = transactions;
         this.outbox = outbox;
         this.applications = applications;
     }
@@ -72,12 +74,8 @@ public class PackageService {
      * @return пакет
      * @throws DomainException PROGRAM_NOT_FOUND или INN_INVALID
      */
-    @Transactional
     public PackageView create(String orgInn, String programCode, String idempotencyKey, String userId,
                                ApplicationData application) {
-        if (!programs.contains(programCode)) {
-            throw new DomainException(ErrorCode.PROGRAM_NOT_FOUND, "Программа не найдена: " + programCode);
-        }
         if (application != null && !orgInn.equals(application.orgInn())) {
             throw new DomainException(ErrorCode.VALIDATION_ERROR, "ИНН заявки должен совпадать с ИНН пакета");
         }
@@ -88,6 +86,12 @@ public class PackageService {
                 return get(existing.get());
             }
         }
+        programs.require(programCode);
+        return transactions.execute(status -> createStored(orgInn, programCode, idempotencyKey, userId, application));
+    }
+
+    private PackageView createStored(String orgInn, String programCode, String idempotencyKey, String userId,
+                                     ApplicationData application) {
         Organization org = organizations.getOrCreate(orgInn, userId);
         UUID newId = UuidCreator.getTimeOrderedEpoch();
         OffsetDateTime now = OffsetDateTime.now(clock);

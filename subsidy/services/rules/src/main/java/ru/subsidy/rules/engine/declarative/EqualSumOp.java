@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 
 import ru.subsidy.rules.engine.Evidence;
 import ru.subsidy.rules.engine.RuleResult;
+import ru.subsidy.rules.engine.RuleStatus;
 import ru.subsidy.rules.money.Money;
 
 /**
@@ -50,6 +51,10 @@ public final class EqualSumOp implements DeclarativeOp {
     public RuleResult apply(RuleSpec spec, Scope scope) {
         BigDecimal tolerance = Optional.ofNullable(Params.decimal(spec, TOLERANCE)).orElse(Money.TOLERANCE);
         List<Operand[]> pairs = pairs(spec);
+        boolean noApplication = scope.facts().application() == null || scope.facts().application().isNull();
+        if (noApplication && pairs.stream().allMatch(pair -> pair[0].usesApplicant() || pair[1].usesApplicant())) {
+            return spec.notApplicable("Анкета заявки не заполнена — сверка с ней не выполняется");
+        }
         for (Operand[] pair : pairs) {
             Optional<Operand.Value> left = pair[0].resolve(scope);
             Optional<Operand.Value> right = pair[1].resolve(scope);
@@ -66,12 +71,13 @@ public final class EqualSumOp implements DeclarativeOp {
         where.addAll(right.evidence());
         BigDecimal diff = left.amount().subtract(right.amount()).abs();
         if (diff.compareTo(tolerance) <= 0) {
-            return spec.pass(left.label() + Texts.SPACE + Money.format(left.amount()) + " совпадает с "
-                    + right.label(), where);
+            return new RuleResult(spec.code(), RuleStatus.PASSED, left.label() + Texts.SPACE
+                    + Money.format(left.amount()) + " совпадает с " + right.label() + Texts.SPACE
+                    + Money.format(right.amount()), where, Money.plain(left.amount()), Money.plain(right.amount()));
         }
         return spec.fail(left.label() + Texts.SPACE + Money.format(left.amount()) + " ≠ " + right.label()
                 + Texts.SPACE + Money.format(right.amount()) + " (разница " + Money.format(diff) + ")", where,
-                Money.plain(right.amount()), Money.plain(left.amount()));
+                Money.plain(left.amount()), Money.plain(right.amount()));
     }
 
     private static List<Operand[]> pairs(RuleSpec spec) {

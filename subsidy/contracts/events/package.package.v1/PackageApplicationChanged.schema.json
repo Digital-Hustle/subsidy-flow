@@ -25,7 +25,7 @@
     },
     "inn": {
       "type": "string",
-      "pattern": "^[0-9]{10}$"
+      "pattern": "^([0-9]{10}|[0-9]{12})$"
     },
     "programCode": {
       "type": "string"
@@ -56,14 +56,14 @@
       "properties": {
         "orgInn": {
           "type": "string",
-          "pattern": "^[0-9]{10}$"
+          "pattern": "^([0-9]{10}|[0-9]{12})$"
         },
         "orgName": {
           "type": "string"
         },
         "ogrn": {
           "type": "string",
-          "pattern": "^[0-9]{13}$"
+          "pattern": "^([0-9]{13}|[0-9]{15})$"
         },
         "address": {
           "type": "object",
@@ -142,6 +142,19 @@
             }
           },
           "additionalProperties": false
+        },
+        "conditions": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "maxProperties": 50,
+          "propertyNames": {
+            "pattern": "^[A-Za-z][A-Za-z0-9_]{0,63}$"
+          },
+          "additionalProperties": {
+            "type": "boolean"
+          }
         }
       },
       "additionalProperties": false

@@ -134,6 +134,9 @@ services:
       OIDC_ISSUER_URI: ${OIDC_ISSUER_URI:?}
       SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: http://keycloak:8080/auth/realms/subsidy/protocol/openid-connect/certs
       FILES_ENCRYPTION_KEY: ${FILES_ENCRYPTION_KEY:?}
+      RULES_URL: http://rules:8083
+      OIDC_TOKEN_URI: http://keycloak:8080/auth/realms/subsidy/protocol/openid-connect/token
+      KC_SVC_PACKAGE_SECRET: ${KC_SVC_PACKAGE_SECRET:?}
       UPLOAD_MAX_MB: ${UPLOAD_MAX_MB:-30}
       UPLOAD_MAX_PAGES: ${UPLOAD_MAX_PAGES:-60}
       UPLOAD_MAX_FILES: ${UPLOAD_MAX_FILES:-60}

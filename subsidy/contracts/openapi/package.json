@@ -1460,6 +1460,13 @@
           },
           "property" : {
             "$ref" : "#/components/schemas/Property"
+          },
+          "conditions" : {
+            "type" : [ "object", "null" ],
+            "additionalProperties" : {
+              "type" : "boolean"
+            },
+            "description" : "Условия конкретного проекта; отсутствующий ключ — неизвестно"
           }
         },
         "required" : [ "address", "applicationDate", "ogrn", "orgInn", "orgName", "project", "requestedAmount", "signatory" ]
@@ -2097,7 +2104,7 @@
             "type" : "string"
           },
           "present" : {
-            "type" : "boolean"
+            "type" : [ "boolean", "null" ]
           },
           "reason" : {
             "type" : "string"

@@ -52,6 +52,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/internal/rules/programs/{code}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["program_1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/internal/rules/packages/{packageId}/facts": {
         parameters: {
             query?: never;
@@ -279,6 +295,11 @@ export interface components {
             removed?: number;
             status?: string;
         };
+        ProgramLookupRs: {
+            code?: string;
+            /** Format: int32 */
+            version?: number;
+        };
         DocFacts: {
             /** Format: uuid */
             documentId?: string;
@@ -314,6 +335,7 @@ export interface components {
             version?: number;
             stage?: string;
             reasonCode?: string;
+            electronicSignature?: components["schemas"]["SignatureFacts"];
         };
         PackageFacts: {
             /** Format: uuid */
@@ -360,6 +382,12 @@ export interface components {
             evidence?: components["schemas"]["JsonNode"];
             expected?: string;
             actual?: string;
+        };
+        SignatureFacts: {
+            status?: string;
+            present?: boolean | null;
+            reason?: string;
+            cryptographicallyVerified?: boolean;
         };
         RuleStat: {
             rule?: string;
@@ -586,6 +614,46 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["RebuildRs"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Payload Too Large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    program_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ProgramLookupRs"];
                 };
             };
             /** @description Bad Request */

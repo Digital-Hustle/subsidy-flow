@@ -29,29 +29,35 @@ public final class DateNotFutureOp implements DeclarativeOp {
 
     @Override
     public List<String> parameters() {
-        return List.of(Params.TYPES, Params.FIELD);
+        return List.of(Params.TYPES, Params.FIELD, Params.FIELDS);
     }
 
     @Override
     public void validate(RuleSpec spec) {
         Params.types(spec);
+        if (spec.params().has(Params.FIELDS)) {
+            Params.list(spec, Params.FIELDS);
+        }
     }
 
     @Override
     public RuleResult apply(RuleSpec spec, Scope scope) {
-        String field = Params.text(spec, Params.FIELD, DATE);
+        List<String> fields = spec.params().has(Params.FIELDS) ? Params.list(spec, Params.FIELDS)
+                : List.of(Params.text(spec, Params.FIELD, DATE));
         List<String> future = new ArrayList<>();
         List<Evidence> where = new ArrayList<>();
         int seen = 0;
         for (DocFacts doc : scope.docs(Params.types(spec))) {
-            Optional<LocalDate> date = doc.date(field);
-            if (date.isEmpty()) {
-                continue;
-            }
-            seen++;
-            if (date.get().isAfter(scope.today())) {
-                future.add(Docs.title(doc.type()) + Texts.DASH + Texts.date(date.get()));
-                where.add(Evidence.of(doc, field));
+            for (String field : fields) {
+                Optional<LocalDate> date = doc.date(field);
+                if (date.isEmpty()) {
+                    continue;
+                }
+                seen++;
+                if (date.get().isAfter(scope.today())) {
+                    future.add(Docs.title(doc.type()) + ": " + Docs.field(field) + Texts.DASH + Texts.date(date.get()));
+                    where.add(Evidence.of(doc, field));
+                }
             }
         }
         if (seen == 0) {
