@@ -3,7 +3,7 @@ import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { motion } from "motion/react";
 import { ArrowLeft, ChevronRight, FolderOpen, History } from "lucide-react";
 import { AppStatusBadge, dateTimeRu, fieldLabel, reviewApi, reviewKeys } from "@/entities/application";
-import { orgActionLabel, protocolApi, protocolKeys } from "@/entities/protocol";
+import { orgActionLabel, protocolApi, protocolKeys, useProgramName } from "@/entities/protocol";
 import { errorText } from "@/shared/api";
 import { Button, Card, CardContent, CardHeader, CardTitle, EmptyState, PageHeader, RowsSkeleton, Status } from "@/shared/ui";
 import { routes } from "@/shared/const/router";
@@ -15,6 +15,7 @@ const detailsText = (d?: Record<string, unknown> | null) =>
 
 /** Организация: все её заявки и лента событий (создание, протоколы, правки, решения). */
 export const OrganizationPage = () => {
+  const programName = useProgramName();
   const { inn = "" } = useParams();
   const history = useQuery({ queryKey: protocolKeys.orgHistory(inn), queryFn: () => protocolApi.orgHistory(inn) });
   const f = { inn };
@@ -39,7 +40,7 @@ export const OrganizationPage = () => {
                 <motion.li key={p.id} variants={fadeUp} className="border-t border-border first:border-t-0">
                   <Link to={routes.operatorApplication(p.id)} className="group flex min-w-0 items-center gap-3 px-4 py-3 text-sm outline-none transition-colors duration-fast hover:bg-muted focus-visible:bg-muted sm:px-6">
                     <span className="grid size-9 shrink-0 place-items-center rounded-md bg-muted text-muted-foreground group-hover:bg-card"><FolderOpen className="size-4" /></span>
-                    <span className="min-w-0 flex-1"><span className="block truncate font-medium">{p.program ?? `№ ${p.id.slice(0, 8)}`}</span><span className="block truncate text-xs text-muted-foreground">{p.updatedAt ? agoRu(Date.parse(p.updatedAt)) : ""}</span></span>
+                    <span className="min-w-0 flex-1"><span className="block truncate font-medium">{p.program ? programName(p.program) : `№ ${p.id.slice(0, 8)}`}</span><span className="block truncate text-xs text-muted-foreground">{p.updatedAt ? agoRu(Date.parse(p.updatedAt)) : ""}</span></span>
                     <AppStatusBadge status={p.status} />
                     <ChevronRight className="size-4 shrink-0 text-subtle-foreground transition-transform duration-fast group-hover:translate-x-0.5" />
                   </Link>

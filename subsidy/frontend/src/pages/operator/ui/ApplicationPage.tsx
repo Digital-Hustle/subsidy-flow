@@ -5,7 +5,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { AlertTriangle, ArrowLeft, Bot, Building2, ClipboardList, FileText, Gavel, History, ListChecks, MessageSquarePlus, MessageSquareWarning, RefreshCw, ScrollText, UserCheck } from "lucide-react";
 import { AppStatusBadge, dateRuFull, dateTimeRu, decisionView, moneyRu, reviewApi, reviewKeys, waitingRu, type ApplicationData, type FieldCard } from "@/entities/application";
 import { StageBadge, confidenceTone, percent, reasonView, typeTitle } from "@/entities/document";
-import { protocolApi, protocolKeys } from "@/entities/protocol";
+import { protocolApi, protocolKeys, useProgramName } from "@/entities/protocol";
 import { can, useSession } from "@/entities/session";
 import { AssistantChat } from "@/features/ask-assistant";
 import { DecisionDialog } from "@/features/decide-application";
@@ -14,6 +14,7 @@ import { DocumentActions, useAssign, useRebuild } from "@/features/review-docume
 import { ExportProtocolButtons } from "@/features/export-documents";
 import { useTakeNext } from "@/features/take-next";
 import { DocumentViewer } from "@/widgets/document-viewer";
+import { UploadFiles } from "@/features/create-package";
 import { FieldsPanel } from "@/widgets/fields-panel";
 import { HistoryTimeline } from "@/widgets/history-timeline";
 import { ProtocolPanel } from "@/widgets/protocol-panel";
@@ -41,6 +42,7 @@ const ApplicationData = ({ a }: { a: ApplicationData }) => {
 
 /** Карточка заявки: оригинал рядом с полями, протокол проверки, история, помощник и действия специалиста. */
 export const ApplicationPage = () => {
+  const programName = useProgramName();
   const { id = "" } = useParams();
   const s = useSession();
   const qc = useQueryClient();
@@ -126,7 +128,7 @@ export const ApplicationPage = () => {
           <div className="mt-1.5 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
             <AppStatusBadge status={card.status} />
             <span>№ {id.slice(0, 8)}</span>
-            {card.program && <span>{card.program}</span>}
+            {card.program && <span>{programName(card.program)}</span>}
             {card.org.inn && <Link to={routes.operatorOrganization(card.org.inn)} className="inline-flex items-center gap-1 hover:text-foreground hover:underline"><Building2 className="size-3.5" />ИНН {card.org.inn}</Link>}
             {card.submittedAt && <span>отправлена {dateTimeRu(card.submittedAt)}</span>}
             {card.assignee && <Status><UserCheck />{mine ? "у вас" : card.assignee}</Status>}
@@ -137,6 +139,7 @@ export const ApplicationPage = () => {
         <div className="flex flex-wrap gap-2">
           {canAct && !mine && !decided && <Button variant="secondary" disabled={assign.isPending} onClick={() => assign.mutate(!!card.assignee)}><UserCheck />{card.assignee ? "Забрать себе" : "Взять в работу"}</Button>}
           {canAct && !decided && <Button variant="secondary" onClick={() => { setAsk(true); setAskOpen(true); }}><MessageSquarePlus />Запросить</Button>}
+          {canAct && !decided && docs.length > 0 && <UploadFiles packageId={id} label="Добавить файлы" />}
           {can(s.roles, "export") && sum && <ExportProtocolButtons packageId={id} />}
           {can(s.roles, "reprocess") && <Button variant="quiet" disabled={rebuild.isPending} onClick={() => rebuild.mutate(undefined)} title="Пересобрать документы из docproc и пересчитать протокол"><RefreshCw />Пересобрать</Button>}
           {can(s.roles, "decide") && !decided && <Button onClick={() => setDecide(true)} disabled={!sum} title={sum ? undefined : "Решение — после формирования протокола"}><Gavel />Решение</Button>}
@@ -175,7 +178,8 @@ export const ApplicationPage = () => {
 
       {!docs.length ? (
         <div className="grid gap-4 lg:grid-cols-2">
-          <Card><EmptyState icon={<FileText />} title="Документов пока нет" text="Заявитель ещё не загрузил файлы" /></Card>
+          <Card><EmptyState icon={<FileText />} title="Документов пока нет" text={card.source === "SPECIALIST" ? "Загрузите документы организации в PDF" : "Заявитель ещё не загрузил файлы"}
+            action={canAct && !decided ? <UploadFiles packageId={id} /> : undefined} /></Card>
           <ProtocolPanel packageId={id} onEvidence={onEvidence} />
         </div>
       ) : (

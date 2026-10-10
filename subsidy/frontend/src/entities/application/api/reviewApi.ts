@@ -37,6 +37,14 @@ export const reviewApi = {
       return { packageId: r.items?.[0]?.id };
     }
   },
+  /** Пакет от специалиста (документы принесли не через кабинет): ИНН + программа, Idempotency-Key от двойного клика. */
+  create: (orgInn: string, programCode: string) =>
+    api<{ packageId: string }>("package", "/packages", { method: "POST", body: { orgInn, programCode }, headers: { "Idempotency-Key": crypto.randomUUID() } }),
+  uploadFiles: (packageId: string, files: File[]) => {
+    const form = new FormData();
+    files.forEach((f) => form.append("files", f, f.name));
+    return api<{ accepted?: unknown[]; rejected?: { name: string; code?: string; detail?: string; hint?: string }[] }>("package", `/packages/${packageId}/files`, { method: "POST", body: form });
+  },
   assign: (id: string, force = false) => api<void>("package", `/packages/${id}/assign${force ? "?force=true" : ""}`, { method: "POST" }),
   card: async (id: string): Promise<Card> => {
     const [p, docs, t] = await Promise.all([
