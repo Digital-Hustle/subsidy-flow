@@ -1,0 +1,197 @@
+name: subsidy-ci
+on:
+  pull_request:
+    paths: ['subsidy/**', '.github/**']
+  push:
+    branches: [main]
+    paths: ['subsidy/**', '.github/**']
+concurrency:
+  group: subsidy-ci-${{ github.ref }}
+  cancel-in-progress: true
+permissions:
+  contents: read
+  pull-requests: read   # dorny/paths-filter читает список файлов PR
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      services: ${{ steps.svc.outputs.list }}
+      has_services: ${{ steps.svc.outputs.has }}
+      frontend: ${{ steps.f.outputs.frontend }}
+      infra: ${{ steps.f.outputs.infra }}
+      has_frontend: ${{ steps.e.outputs.frontend }}
+      has_infra: ${{ steps.e.outputs.infra }}
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - id: e
+        name: какие части уже существуют (до старта хакатона кода нет)
+        run: |
+          echo "frontend=$([ -f subsidy/frontend/package.json ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+          echo "infra=$([ -f subsidy/infra/docker-compose.yml ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+      - id: f
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            frontend: ['subsidy/frontend/**', 'subsidy/contracts/**']
+            infra: ['subsidy/infra/**']
+      - id: svc
+        name: изменённые сервисы (libs/, build-logic/, gradle/, config/ → все)
+        run: |
+          cd subsidy
+          all=$(for d in services/*/; do n=$(basename "$d"); case "$n" in libs|build-logic|gradle|config) continue;; esac
+                [ -f "$d/build.gradle.kts" ] || [ -f "$d/pyproject.toml" ] && echo "$n"; done 2>/dev/null || true)
+          if [ -z "$all" ]; then echo 'list=[]' >> "$GITHUB_OUTPUT"; echo has=false >> "$GITHUB_OUTPUT"; exit 0; fi
+          base=${{ github.event.pull_request.base.sha || github.event.before }}
+          changed=$(git diff --relative --name-only "$base" HEAD 2>/dev/null || echo services/libs/)
+          if [ "${{ github.ref }}" = refs/heads/main ] || grep -qE '^services/(libs/|build-logic/|gradle/|config/|settings.gradle.kts)' <<<"$changed"; then list="$all"
+          else list=$(grep -oE '^services/[a-z]+/' <<<"$changed" | cut -d/ -f2 | grep -xF "$all" | sort -u || true); fi
+          json=$(for n in $list; do kind=java; [ -f "services/$n/pyproject.toml" ] && kind=python
+                 db=false; [ -d "services/$n/src/main/resources/db/changelog" ] && db=true
+                 jq -nc --arg n "$n" --arg k "$kind" --argjson db $db '{name:$n,kind:$k,db:$db}'; done | jq -sc .)
+          echo "list=$json" >> "$GITHUB_OUTPUT"
+          if [ "$json" = "[]" ]; then echo has=false >> "$GITHUB_OUTPUT"; else echo has=true >> "$GITHUB_OUTPUT"; fi
+
+  services:
+    needs: changes
+    if: needs.changes.outputs.has_services == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        svc: ${{ fromJSON(needs.changes.outputs.services) }}
+    name: services (${{ matrix.svc.name }})
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env: { POSTGRES_PASSWORD: postgres }
+        ports: ['5432:5432']
+        options: --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    env: { DB_HOST: localhost, DB_ADMIN_USER: postgres, DB_ADMIN_PASSWORD: postgres }
+    steps:
+      - uses: actions/checkout@v4
+      # ---- Java (Gradle) ----
+      - if: matrix.svc.kind == 'java'
+        uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: '21' }
+      - if: matrix.svc.kind == 'java'
+        uses: gradle/actions/setup-gradle@v4
+      - name: БД сервиса + Liquibase + jOOQ
+        if: matrix.svc.kind == 'java' && matrix.svc.db
+        working-directory: subsidy/services
+        run: |
+          PGPASSWORD=postgres psql -h localhost -U postgres -c "create database ${{ matrix.svc.name }}"
+          ./gradlew --no-daemon :${{ matrix.svc.name }}:update :${{ matrix.svc.name }}:generateJooq
+      - name: check (компиляция, checkstyle, unit + integration, jacoco)
+        if: matrix.svc.kind == 'java'
+        working-directory: subsidy/services
+        run: ./gradlew --no-daemon --continue :${{ matrix.svc.name }}:check
+      - name: be-check
+        if: matrix.svc.kind == 'java'
+        run: node .agents/skills/backend-spring/scripts/be-check.mjs subsidy/services
+      - name: контракт OpenAPI
+        if: matrix.svc.kind == 'java' && matrix.svc.db
+        working-directory: subsidy/services
+        run: |
+          ./gradlew --no-daemon :${{ matrix.svc.name }}:exportOpenApi
+          git diff --exit-code -- ../contracts/openapi/
+      - uses: mikepenz/action-junit-report@v5
+        if: always() && matrix.svc.kind == 'java'
+        with:
+          report_paths: subsidy/services/${{ matrix.svc.name }}/build/test-results/**/TEST-*.xml
+          check_name: tests (${{ matrix.svc.name }})
+          require_tests: false
+      # ---- Python (ocr) ----
+      - if: matrix.svc.kind == 'python'
+        uses: astral-sh/setup-uv@v6
+      - name: tesseract (rus+eng)
+        if: matrix.svc.kind == 'python'
+        run: sudo apt-get update -q && sudo apt-get install -y -q tesseract-ocr tesseract-ocr-rus fonts-liberation
+      - name: ruff, mypy, pytest
+        if: matrix.svc.kind == 'python'
+        working-directory: subsidy/services/${{ matrix.svc.name }}
+        run: |
+          uv sync --frozen
+          uv run ruff check . && uv run ruff format --check .
+          uv run mypy src
+          uv run pytest -q
+
+  frontend:
+    needs: changes
+    if: needs.changes.outputs.has_frontend == 'true' && (needs.changes.outputs.frontend == 'true' || github.ref == 'refs/heads/main')
+    runs-on: ubuntu-latest
+    defaults: { run: { working-directory: subsidy/frontend } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '22', cache: npm, cache-dependency-path: subsidy/frontend/package-lock.json }
+      - run: npm ci
+      - run: npm run gen:api
+      - name: дизайн-токены актуальны (общие токены)
+        run: npm run gen:tokens -- --check
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run build
+      - name: fsd-check
+        run: node ../../.agents/skills/frontend-fsd/scripts/fsd-check.mjs src
+
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - name: gitleaks (вся история)
+        run: docker run --rm -v "$PWD:/repo" zricethezav/gitleaks:latest detect --source /repo --no-banner --redact -v
+      - uses: actions/setup-node@v4
+        with: { node-version: '22' }   # guard проверяет дизайн-токены (gen-tokens --check, Node ≥ 22.6)
+      - name: guard (красные линии)
+        run: subsidy/scripts/guard.sh
+      - name: trivy (уязвимости зависимостей)
+        run: docker run --rm -v "$PWD:/repo" aquasec/trivy:latest fs --scanners vuln --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 /repo/subsidy
+
+  eval:
+    name: eval (синтетика, rules.md §1 — без подгонки)
+    needs: changes
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - id: e
+        run: echo "has=$([ -f subsidy/eval/run.py ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+      - if: steps.e.outputs.has == 'true'
+        uses: astral-sh/setup-uv@v6
+      - name: проверки eval-скриптов и синтетики (полный прогон через API — в smoke на main)
+        if: steps.e.outputs.has == 'true'
+        working-directory: subsidy/eval
+        run: |
+          uv sync --frozen
+          uv run ruff check .
+          uv run pytest -q
+
+  infra:
+    needs: changes
+    if: needs.changes.outputs.has_infra == 'true' && needs.changes.outputs.infra == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker compose --env-file .env.example config -q
+        working-directory: subsidy/infra
+
+  smoke:
+    needs: [changes, services, frontend, security]
+    if: always() && github.ref == 'refs/heads/main' && needs.changes.outputs.has_infra == 'true' && (needs.services.result == 'success' || needs.services.result == 'skipped') && (needs.frontend.result == 'success' || needs.frontend.result == 'skipped') && needs.security.result == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: ../scripts/gen-env.sh && docker compose up -d --build --wait --wait-timeout 600
+        working-directory: subsidy/infra
+      - run: subsidy/scripts/smoke.sh https://localhost
+      - if: hashFiles('subsidy/eval/run.py') != ''
+        uses: astral-sh/setup-uv@v6
+      - name: eval на синтетике через API стенда
+        if: hashFiles('subsidy/eval/run.py') != ''
+        working-directory: subsidy/eval
+        run: uv run python run.py --set synthetic --api https://localhost
+      - if: failure()
+        run: docker compose logs --tail=200
+        working-directory: subsidy/infra

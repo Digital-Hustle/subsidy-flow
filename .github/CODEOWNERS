@@ -1,0 +1,32 @@
+# Замените @b1 ... @f2 на GitHub-логины участников (последнее совпадение побеждает)
+*                                              @b1
+/.github/                                      @b1
+/.agents/skills/                               @b1
+/edge/                                         @b1
+/mail/                                         @b1
+
+# ---------- «Субсидии» (subsidy/) ----------
+/subsidy/                                      @b1
+/subsidy/services/gateway/                     @b1
+/subsidy/services/package/                     @b1
+/subsidy/services/libs/common/                 @b1
+/subsidy/services/docproc/                     @b2
+/subsidy/services/ocr/                         @b2
+/subsidy/eval/                                 @b2
+/subsidy/services/rules/                       @b3
+/subsidy/services/assistant/                   @b3
+/subsidy/services/libs/llm/                    @b3
+/subsidy/docs/RULES-CATALOG.md                 @b3
+/subsidy/contracts/                            @b1 @f2
+/subsidy/frontend/                             @f2
+/subsidy/frontend/src/pages/PackagePage/       @f1
+/subsidy/frontend/src/widgets/FileList/        @f1
+/subsidy/frontend/src/widgets/DocumentViewer/  @f1
+/subsidy/frontend/src/widgets/FieldsPanel/     @f1
+/subsidy/frontend/src/widgets/UploadDropzone/  @f1
+/subsidy/frontend/src/features/create-package/ @f1
+/subsidy/frontend/src/features/upload-files/   @f1
+/subsidy/frontend/src/features/replace-file/   @f1
+/subsidy/frontend/src/features/remove-file/    @f1
+/subsidy/frontend/src/features/change-type/    @f1
+/subsidy/frontend/src/features/correct-field/  @f1
