@@ -69,6 +69,7 @@ export const reviewApi = {
   expiring: (days: number) => api<{ items?: Expiring[] }>("rules", `/expiring${qs({ days })}`),
   types,
   model: () => api<ModelStatus>("docproc", "/model/status"),
+  docTypes: () => types(),
 };
 
 export const reviewKeys = {

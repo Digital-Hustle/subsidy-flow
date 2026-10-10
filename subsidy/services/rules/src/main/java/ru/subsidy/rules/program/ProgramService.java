@@ -190,19 +190,26 @@ public class ProgramService {
         } catch (IllegalArgumentException broken) {
             throw new DomainException(ErrorCode.VALIDATION_ERROR, broken.getMessage());
         }
-        JsonNode description = params.get(DESCRIPTION);
-        if (description != null && !description.isNull()
-                && (!description.isTextual() || description.asText().length() > MAX_DESCRIPTION)) {
+        validateDescription(params.get(DESCRIPTION));
+        validateDeadline(params.get(DEADLINE));
+    }
+
+    private static void validateDescription(JsonNode description) {
+        boolean absent = description == null || description.isNull();
+        if (!absent && (!description.isTextual() || description.asText().length() > MAX_DESCRIPTION)) {
             throw new DomainException(ErrorCode.VALIDATION_ERROR,
                     "params.description — строка не длиннее " + MAX_DESCRIPTION + " символов");
         }
-        JsonNode deadline = params.get(DEADLINE);
-        if (deadline != null && !deadline.isNull()) {
-            try {
-                LocalDate.parse(deadline.asText());
-            } catch (DateTimeParseException broken) {
-                throw new DomainException(ErrorCode.VALIDATION_ERROR, "params.deadline — дата ГГГГ-ММ-ДД");
-            }
+    }
+
+    private static void validateDeadline(JsonNode deadline) {
+        if (deadline == null || deadline.isNull()) {
+            return;
+        }
+        try {
+            LocalDate.parse(deadline.asText());
+        } catch (DateTimeParseException broken) {
+            throw new DomainException(ErrorCode.VALIDATION_ERROR, "params.deadline — дата ГГГГ-ММ-ДД");
         }
     }
 

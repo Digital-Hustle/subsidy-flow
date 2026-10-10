@@ -17,6 +17,8 @@ export const protocolApi = {
   stats: (f: { from?: string; to?: string; program?: string }) => api<Stats>("rules", `/stats/errors${qs(f)}`),
   programs: () => api<{ items?: Program[] }>("rules", "/programs").then((r) => r.items ?? []),
   program: (code: string) => api<Program>("rules", `/programs/${code}`),
+  programVersions: (code: string) => api<{ items?: Program[] }>("rules", `/programs/${code}/versions`).then((r) => r.items ?? []),
+  createProgram: (body: { code: string; name: string; params: unknown; checklist: unknown }) => api<Program>("rules", "/programs", { method: "POST", body }),
   saveProgram: (code: string, body: { name?: string; params: unknown; checklist: unknown }) => api<Program>("rules", `/programs/${code}`, { method: "PUT", body }),
 };
 
@@ -28,4 +30,5 @@ export const protocolKeys = {
   stats: (f: object) => ["rules", "stats", f] as const,
   programs: ["rules", "programs"] as const,
   program: (code: string) => ["rules", "program", code] as const,
+  programVersions: (code: string) => ["rules", "program", code, "versions"] as const,
 };
