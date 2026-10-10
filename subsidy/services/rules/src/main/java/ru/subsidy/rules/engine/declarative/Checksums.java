@@ -37,13 +37,13 @@ final class Checksums {
     }
 
     private static boolean inn(String value) {
-        boolean ok = false;
+        boolean valid = false;
         if (value.length() == LEGAL) {
-            ok = control(value, INN10) == digit(value, LEGAL - 1);
+            valid = control(value, INN10) == digit(value, LEGAL - 1);
         } else if (value.length() == PERSON) {
-            ok = control(value, INN12_11) == digit(value, PERSON - 2) && control(value, INN12_12) == digit(value, PERSON - 1);
+            valid = control(value, INN12_11) == digit(value, PERSON - 2) && control(value, INN12_12) == digit(value, PERSON - 1);
         }
-        return ok;
+        return valid;
     }
 
     private static boolean ogrn(String value) {
