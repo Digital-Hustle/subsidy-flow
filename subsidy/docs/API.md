@@ -112,3 +112,13 @@
 - ocr: `POST /v1/extract` multipart `file` → `{mime, pages: [{n, width, height, textLayer, text, words: [{t, bbox, conf, line}], tables: [{rows: [[ячейка]], bbox, source: text_layer|words}], quality: {blur, brightness, glare, cutOff, dpi}, meanConf, rotation, error?}], durationMs}` (таблицы OCR-06: линейки pdfplumber для текстового слоя, иначе строки/колонки по bbox слов; ≥ 3 строк × ≥ 3 ячеек); `POST /v1/render?page=` multipart `file` → PNG. Токен service account `svc-docproc|svc-package` с `aud=ocr`
 - docproc: `GET /internal/docproc/packages/{id}/documents` → все результаты пакета (для rules)
 - rules: `GET /internal/rules/packages/{id}/facts` → протокол + поля (для assistant, только чтение)
+
+## Заявка и PDF (B1-1…B1-4)
+- `POST /package/api/v1/packages`: прежние `orgInn`, `programCode`; опциональный `application` содержит полную заявку. Без него создаётся черновик с revision=0.
+- `GET /package/api/v1/packages/{id}`: дополнительно `application`, `applicationRevision`; имя организации берётся из снимка заявки.
+- `PUT /package/api/v1/packages/{id}/application`: `{expectedRevision, application}`; полная замена, SPECIALIST/SENIOR. Конфликт версии или решённый пакет → 409; отсутствующий пакет → 404.
+- `GET /package/api/v1/packages/{id}/application/history`: `{items:[{revision, changedBy, changedAt, before, after}]}`, доступ также AUDITOR. История только дополняется.
+- application: `orgInn` (10 цифр, ООО), `orgName`, `ogrn` (13 цифр), `address:{value,purpose}` (LEGAL/ACTUAL/PROJECT), `project`, `requestedAmount` (положительная десятичная строка, 2 знака), `applicationDate` (ISO date), `signatory:{fullName,position,authority}`, опциональный `property:{cadastralNumber,address,rightType}` (OWNERSHIP/LEASE/USE).
+- Приём и замена: разрешён только PDF по байтам, независимо от имени и Content-Type. Изображения/Office/ZIP → `FILE_TYPE_UNSUPPORTED`, hint: сохраните в PDF.
+- Текущая версия файла содержит `electronicSignature:{status,present,reason,cryptographicallyVerified}`: PRESENT/ABSENT/UNKNOWN, present=true/false/null. Проверяется структура PDF, а не криптографическая действительность; cryptographicallyVerified всегда false. Для старых версий UNKNOWN/NOT_INSPECTED.
+- Изменение заявки публикует `PackageApplicationChanged` через outbox; rules хранит новую ревизию и запускает перепроверку. `PackageChecked.applicationRevision` не позволяет старой проверке подтвердить новую заявку.
