@@ -43,6 +43,7 @@ public class PipelineRunner {
     private static final String TYPE_UNKNOWN = "TYPE_UNKNOWN";
     private static final String TYPE_OTHER = "TYPE_OTHER";
     private static final String FIELDS_TO_CHECK = "FIELDS_TO_CHECK";
+    private static final String PARTIAL_SCAN = "PARTIAL_SCAN";
     private static final String SPECIALIST = "SPECIALIST";
     private static final String MODEL_UNAVAILABLE = "MODEL_UNAVAILABLE";
     private static final int CONF_SCALE = 3;
@@ -58,6 +59,7 @@ public class PipelineRunner {
     private final TypeRegistry registry;
     private final DocprocProperties props;
     private final PipelineMetrics metrics;
+    private final PageQualityAssessor quality;
 
     /**
      * Конструктор.
@@ -72,11 +74,12 @@ public class PipelineRunner {
      * @param registry реестр видов
      * @param props настройки
      * @param metrics метрики стадий
+     * @param quality оценка качества сканов
      */
     public PipelineRunner(PipelineStore store, JobQueue queue, PackageClient files, TextExtractor texts,
                           Classifier classifier, FieldExtractor extractor, FieldValidator validator,
                           TypeRegistry registry, DocprocProperties props,
-                          PipelineMetrics metrics) {
+                          PipelineMetrics metrics, PageQualityAssessor quality) {
         this.store = store;
         this.queue = queue;
         this.files = files;
@@ -87,6 +90,7 @@ public class PipelineRunner {
         this.registry = registry;
         this.props = props;
         this.metrics = metrics;
+        this.quality = quality;
     }
 
     /**
@@ -115,7 +119,9 @@ public class PipelineRunner {
     private void process(Job job, FileBytes content) {
         pagesOf(job, content).ifPresent(pages -> {
             if (pages.stream().noneMatch(PageText::hasText) && !props.visionFallback()) {
-                finish(job, Stage.UNREADABLE, "TEXT_NOT_FOUND", UNREADABLE_EVENT);
+                String reason = quality.unreadableReason(pages);
+                finish(job, Stage.UNREADABLE, reason == null ? PageQualityAssessor.TEXT_NOT_FOUND : reason,
+                        UNREADABLE_EVENT);
             } else {
                 segmentsOf(job, content, pages).ifPresent(docs -> parseAll(job, content, pages, docs));
             }
@@ -146,15 +152,19 @@ public class PipelineRunner {
 
     private void parseAll(Job job, FileBytes content, List<PageText> pages, List<DocSegment> docs) {
         for (DocSegment doc : docs) {
+            Segment seg = doc.segment();
+            boolean partial = quality.partial(pages.stream()
+                    .filter(page -> page.page() >= seg.fromPage() && page.page() <= seg.toPage()).toList());
             Optional<Pending> pending = store.pending(doc.documentId());
             if (pending.isPresent() || !store.isParsed(doc.documentId())) {
-                parse(job, content, pages, doc, pending.orElse(null));
+                parse(job, content, pages, doc, pending.orElse(null), partial);
             }
         }
         finish(job, store.needsReview(job) ? Stage.NEEDS_REVIEW : Stage.PARSED, null, null);
     }
 
-    private void parse(Job job, FileBytes content, List<PageText> pages, DocSegment doc, Pending pending) {
+    private void parse(Job job, FileBytes content, List<PageText> pages, DocSegment doc, Pending pending,
+                       boolean partial) {
         Segment seg = doc.segment();
         final boolean manual = pending != null;
         DocType type = registry.orOther(manual ? pending.type() : seg.type());
@@ -164,7 +174,7 @@ public class PipelineRunner {
                 text, images(job, content, pages, seg.fromPage(), seg.toPage())));
         List<FieldValue> fields = validator.normalize(type, extraction.data(), extraction.confidence(),
                 props.fieldReviewThreshold());
-        String reason = reasonOf(confidence, type, fields);
+        String reason = reasonOf(confidence, type, fields, partial);
         store.saveResult(new ParsedDocument(job.fileId(), job.packageId(), job.version(), doc.documentId(),
                 seg.fromPage(), seg.toPage(), type.code(), confidence, manual ? null : seg.evidence(),
                 manual ? SPECIALIST : PipelineStore.MODEL, fields, extraction.model(),
@@ -179,7 +189,7 @@ public class PipelineRunner {
         return text.length() > props.maxCharsPerDocument() ? text.substring(0, props.maxCharsPerDocument()) : text;
     }
 
-    private String reasonOf(BigDecimal confidence, DocType type, List<FieldValue> fields) {
+    private String reasonOf(BigDecimal confidence, DocType type, List<FieldValue> fields, boolean partial) {
         String reason = null;
         if (confidence.compareTo(props.classifyMinConfidence()) < 0) {
             reason = TYPE_UNKNOWN;
@@ -187,6 +197,9 @@ public class PipelineRunner {
             reason = TYPE_OTHER;
         } else if (fields.stream().anyMatch(FieldValue::failed)) {
             reason = FIELDS_TO_CHECK;
+        } else if (partial) {
+            // частично читаемый скан — на ручную проверку (B2-3); поля не выдумываются
+            reason = PARTIAL_SCAN;
         }
         return reason;
     }
