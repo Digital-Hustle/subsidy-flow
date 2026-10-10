@@ -30,11 +30,11 @@ public class PageQualityAssessor {
      * @return причина по-русски или null
      */
     public String unreadableReason(List<PageText> pages) {
-        List<PageText> scanned = scannedPages(pages);
-        if (scanned.isEmpty() || scanned.stream().anyMatch(PageText::hasText)) {
+        List<PageText> ocrPages = ocrPages(pages);
+        if (ocrPages.isEmpty() || ocrPages.stream().anyMatch(PageText::hasText)) {
             return null;
         }
-        return cause(scanned);
+        return cause(ocrPages);
     }
 
     /**
@@ -44,7 +44,7 @@ public class PageQualityAssessor {
      * @return true — документ частично читаем, нужна ручная проверка
      */
     public boolean partial(List<PageText> pages) {
-        return scannedPages(pages).stream().anyMatch(PageQualityAssessor::isPartialPage);
+        return ocrPages(pages).stream().anyMatch(PageQualityAssessor::isPartialPage);
     }
 
     private static boolean isPartialPage(PageText page) {
@@ -66,16 +66,16 @@ public class PageQualityAssessor {
                 || Boolean.TRUE.equals(quality.cutOff());
     }
 
-    private static List<PageText> scannedPages(List<PageText> pages) {
+    private static List<PageText> ocrPages(List<PageText> pages) {
         return pages.stream()
                 .filter(page -> PageText.OCR.equals(page.source()) || PageText.OCR_WEAK.equals(page.source())
                         || PageText.NONE.equals(page.source()))
                 .toList();
     }
 
-    private static String cause(List<PageText> scanned) {
+    private static String cause(List<PageText> ocrPages) {
         List<String> causes = new ArrayList<>();
-        for (PageText page : scanned) {
+        for (PageText page : ocrPages) {
             PageQuality quality = page.quality();
             if (quality == null) {
                 continue;
