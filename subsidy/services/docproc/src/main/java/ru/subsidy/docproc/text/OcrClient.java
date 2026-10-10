@@ -24,6 +24,14 @@ import ru.subsidy.docproc.config.DocprocProperties;
 @Component
 public class OcrClient {
 
+    private static final String QUALITY = "quality";
+    private static final String BLUR = "blur";
+    private static final String BRIGHTNESS = "brightness";
+    private static final String GLARE = "glare";
+    private static final String CUT_OFF = "cutOff";
+    private static final String MEAN_CONF = "meanConf";
+    private static final String TEXT_LAYER_KEY = "textLayer";
+
     private final double minConf;
     private final RestClient http;
     private final boolean enabled;
@@ -81,11 +89,41 @@ public class OcrClient {
         if (body != null) {
             for (JsonNode page : body.path("pages")) {
                 String text = page.path("text").asText("");
-                pages.add(new PageText(page.path("n").asInt(pages.size() + 1), text, sourceOf(page, text, minConf))
-                        .withTables(Tables.render(page)));
+                PageText raw = new PageText(page.path("n").asInt(pages.size() + 1), text,
+                        sourceOf(page, text, minConf), null, qualityOf(page));
+                pages.add(raw.withTables(Tables.render(page)));
             }
         }
         return pages;
+    }
+
+    /**
+     * Метрики качества страницы из ответа ocr: blur/brightness/glare/cutOff и средняя уверенность слов.
+     * У страницы с текстовым слоем качество не измеряется (null), meanConf=1 (читаемость не проверяется).
+     *
+     * @param page страница ответа ocr
+     * @return метрики или null
+     */
+    static PageQuality qualityOf(JsonNode page) {
+        JsonNode metrics = page.path(QUALITY);
+        Double blur = number(metrics, BLUR);
+        Double brightness = number(metrics, BRIGHTNESS);
+        Double glare = number(metrics, GLARE);
+        Boolean cutOff = bool(metrics, CUT_OFF);
+        Double meanConf = page.hasNonNull(MEAN_CONF) && !page.path(TEXT_LAYER_KEY).asBoolean(false)
+                ? page.path(MEAN_CONF).asDouble() : null;
+        if (blur == null && brightness == null && glare == null && cutOff == null && meanConf == null) {
+            return null;
+        }
+        return new PageQuality(blur, brightness, glare, cutOff, meanConf);
+    }
+
+    private static Double number(JsonNode node, String key) {
+        return node.hasNonNull(key) ? node.path(key).asDouble() : null;
+    }
+
+    private static Boolean bool(JsonNode node, String key) {
+        return node.hasNonNull(key) ? node.path(key).asBoolean() : null;
     }
 
     /**
@@ -100,7 +138,7 @@ public class OcrClient {
         if (text.isBlank()) {
             return PageText.NONE;
         }
-        boolean weak = !page.path("textLayer").asBoolean(false) && page.path("meanConf").asDouble(1) < minConf;
+        boolean weak = !page.path(TEXT_LAYER_KEY).asBoolean(false) && page.path(MEAN_CONF).asDouble(1) < minConf;
         return weak ? PageText.OCR_WEAK : PageText.OCR;
     }
 }

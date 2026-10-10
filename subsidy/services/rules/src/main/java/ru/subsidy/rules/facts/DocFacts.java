@@ -22,7 +22,7 @@ import ru.subsidy.rules.money.Money;
  * @param type вид
  * @param typeConfidence уверенность вида
  * @param stage стадия
- * @param reasonCode причина (TYPE_UNKNOWN, TYPE_OTHER, FIELDS_TO_CHECK)
+ * @param reasonCode причина (TYPE_UNKNOWN, TYPE_OTHER, FIELDS_TO_CHECK, PARTIAL_SCAN)
  * @param fromPage первая страница
  * @param toPage последняя страница
  * @param fields поля по имени

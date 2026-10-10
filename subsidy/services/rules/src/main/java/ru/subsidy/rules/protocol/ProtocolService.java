@@ -58,7 +58,7 @@ public class ProtocolService {
     private static final String VERSION_KEY = "version";
     private static final String APPLICATION_REVISION = "applicationRevision";
     private static final Logger LOG = LoggerFactory.getLogger(ProtocolService.class);
-    private static final List<String> REVIEW_REASONS = List.of("TYPE_UNKNOWN", "TYPE_OTHER");
+    private static final List<String> REVIEW_REASONS = List.of("TYPE_UNKNOWN", "TYPE_OTHER", "PARTIAL_SCAN");
 
     private final FactsAssembler assembler;
     private final ProgramService programs;
