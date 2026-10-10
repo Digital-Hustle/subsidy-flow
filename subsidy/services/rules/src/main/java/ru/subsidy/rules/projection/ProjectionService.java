@@ -19,6 +19,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.NullNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import ru.subsidy.common.inbox.IdempotentConsumer;
@@ -40,6 +43,8 @@ public class ProjectionService {
     private static final String K_SOURCE = "source";
     private static final String K_TYPE = "type";
     private static final String K_FIELDS = "fields";
+    private static final String K_STATUS = "status";
+    private static final String K_CONFIDENCE = "confidence";
     private static final String K_TYPE_CONFIDENCE = "typeConfidence";
     private static final String K_RESULT_VERSION = "resultVersion";
     private static final String K_DECISION = "decision";
@@ -163,7 +168,7 @@ public class ProjectionService {
         UUID packageId = uuid(payload, PACKAGE_ID);
         int version = payload.path(VERSION).asInt(1);
         OffsetDateTime now = OffsetDateTime.now(clock);
-        var signature = SignatureFacts.stored(text(payload.path(SIGNATURE), "status"),
+        var signature = SignatureFacts.stored(text(payload.path(SIGNATURE), K_STATUS),
                 text(payload.path(SIGNATURE), "reason"));
         dsl.insertInto(Tables.PACKAGE_FILES)
                 .set(Tables.PACKAGE_FILES.FILE_ID, fileId)
@@ -278,7 +283,7 @@ public class ProjectionService {
         Integer resultVersion = payload.hasNonNull(K_RESULT_VERSION) ? payload.path(K_RESULT_VERSION).asInt() : null;
         BigDecimal confidence = payload.hasNonNull(K_TYPE_CONFIDENCE) ? payload.path(K_TYPE_CONFIDENCE).decimalValue()
                 : null;
-        JSONB fields = JSONB.valueOf(payload.path(K_FIELDS).isArray() ? payload.path(K_FIELDS).toString() : "[]");
+        JSONB fields = JSONB.valueOf(withMarks(payload).toString());
         OffsetDateTime now = OffsetDateTime.now(clock);
         dsl.insertInto(Tables.PACKAGE_DOCUMENTS)
                 .set(Tables.PACKAGE_DOCUMENTS.DOCUMENT_ID, documentId)
@@ -306,6 +311,26 @@ public class ProjectionService {
                 .set(Tables.PACKAGE_DOCUMENTS.REMOVED, false)
                 .set(Tables.PACKAGE_DOCUMENTS.UPDATED_AT, now)
                 .execute();
+    }
+
+    // поля документа + визуальные признаки docproc (B2-2) как поля visualSignature/visualStamp: правило VISUAL_MARK
+    // читает их как обычные поля, специалист может подтвердить значение правкой поля
+    private ArrayNode withMarks(JsonNode payload) {
+        ArrayNode fields = payload.path(K_FIELDS).isArray() ? ((ArrayNode) payload.path(K_FIELDS)).deepCopy()
+                : JsonNodeFactory.instance.arrayNode();
+        JsonNode marks = payload.path("marks");
+        addMark(fields, "visualSignature", marks.path("signature"));
+        addMark(fields, "visualStamp", marks.path("stamp"));
+        return fields;
+    }
+
+    private void addMark(ArrayNode fields, String name, JsonNode mark) {
+        if (!mark.hasNonNull(K_STATUS)) {
+            return;
+        }
+        ObjectNode field = fields.addObject().put("name", name).put("value", mark.path(K_STATUS).asText());
+        field.set(K_CONFIDENCE, mark.hasNonNull(K_CONFIDENCE) ? mark.path(K_CONFIDENCE) : NullNode.getInstance());
+        field.putArray("checks");
     }
 
     private void fileProblem(String type, JsonNode payload) {

@@ -34,7 +34,7 @@ public final class ProgramRules {
     public ProgramRules() {
         for (DeclarativeOp operation : List.of(new RequiredFieldsOp(), new PatternOp(), new DateNotFutureOp(),
                 new NotExpiredOp(), new SameValueOp(), new RatioMinOp(), new EqualSumOp(), new NotEmptyOp(),
-                new RangeOp(), new ApplicationMatchOp(), new SignaturePresenceOp())) {
+                new RangeOp(), new ApplicationMatchOp(), new SignaturePresenceOp(), new VisualMarkOp())) {
             ops.put(operation.name(), operation);
         }
     }

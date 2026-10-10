@@ -14,6 +14,8 @@ public final class Prompts {
     public static final String SEGMENT = "segment.v1";
     /** Версия промпта извлечения. */
     public static final String EXTRACT = "extract.v1";
+    /** Версия промпта визуальных признаков (подпись, печать). */
+    public static final String MARKS = "marks.v1";
 
     private Prompts() {
     }

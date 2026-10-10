@@ -54,6 +54,7 @@ app:
     max-chars-per-page: 1500
     max-chars-per-document: 12000
     vision-ocr-min-conf: ${VISION_OCR_MIN_CONF:0.6}
+    visual-marks: ${VISUAL_MARKS_ENABLED:true}
   llm:
     provider: ${LLM_PROVIDER:ollama}
     base-url: ${LLM_BASE_URL:http://ollama:11434}

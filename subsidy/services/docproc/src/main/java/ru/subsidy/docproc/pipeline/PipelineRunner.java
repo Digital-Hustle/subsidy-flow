@@ -1,9 +1,11 @@
 package ru.subsidy.docproc.pipeline;
 
+import java.io.UncheckedIOException;
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -17,8 +19,11 @@ import ru.subsidy.docproc.classify.Prompts;
 import ru.subsidy.docproc.classify.Segment;
 import ru.subsidy.docproc.classify.TypeRegistry;
 import ru.subsidy.docproc.config.DocprocProperties;
+import ru.subsidy.docproc.extract.DocumentMarks;
 import ru.subsidy.docproc.extract.FieldExtractor;
 import ru.subsidy.docproc.extract.FieldExtractor.Extraction;
+import ru.subsidy.docproc.extract.MarkDetector;
+import ru.subsidy.docproc.extract.MarkParser;
 import ru.subsidy.docproc.normalize.FieldValidator;
 import ru.subsidy.docproc.normalize.FieldValue;
 import ru.subsidy.docproc.pipeline.PipelineStore.ParsedDocument;
@@ -27,6 +32,7 @@ import ru.subsidy.docproc.queue.Job;
 import ru.subsidy.docproc.queue.JobQueue;
 import ru.subsidy.docproc.queue.Stage;
 import ru.subsidy.docproc.text.PackageClient;
+import ru.subsidy.docproc.text.PageQuality;
 import ru.subsidy.docproc.text.PageText;
 import ru.subsidy.docproc.text.TextExtractor;
 import ru.subsidy.llm.api.ModelInvalidOutputException;
@@ -60,6 +66,7 @@ public class PipelineRunner {
     private final DocprocProperties props;
     private final PipelineMetrics metrics;
     private final PageQualityAssessor quality;
+    private final MarkDetector marks;
 
     /**
      * Конструктор.
@@ -75,11 +82,13 @@ public class PipelineRunner {
      * @param props настройки
      * @param metrics метрики стадий
      * @param quality оценка качества сканов
+     * @param marks визуальная проверка подписи и печати
      */
     public PipelineRunner(PipelineStore store, JobQueue queue, PackageClient files, TextExtractor texts,
                           Classifier classifier, FieldExtractor extractor, FieldValidator validator,
                           TypeRegistry registry, DocprocProperties props,
-                          PipelineMetrics metrics, PageQualityAssessor quality) {
+                          PipelineMetrics metrics, PageQualityAssessor quality,
+                          MarkDetector marks) {
         this.store = store;
         this.queue = queue;
         this.files = files;
@@ -91,6 +100,7 @@ public class PipelineRunner {
         this.props = props;
         this.metrics = metrics;
         this.quality = quality;
+        this.marks = marks;
     }
 
     /**
@@ -179,8 +189,36 @@ public class PipelineRunner {
                 seg.fromPage(), seg.toPage(), type.code(), confidence, manual ? null : seg.evidence(),
                 manual ? SPECIALIST : PipelineStore.MODEL, fields, extraction.model(),
                 Prompts.SEGMENT + "+" + Prompts.EXTRACT, type.version(), reason != null, reason,
-                manual ? pending.reason() : null, manual ? pending.by() : null));
+                manual ? pending.reason() : null, manual ? pending.by() : null,
+                marks(job, content, doc.documentId().toString(), type, seg), pageQuality(pages, seg)));
         metrics.documentParsed(type.code(), confidence, manual ? SPECIALIST : PipelineStore.MODEL, reason);
+    }
+
+    // визуальная подпись/печать — только для видов с подписантом и файлов, которые можно отрисовать (PDF, сканы)
+    private DocumentMarks marks(Job job, FileBytes content, String documentId, DocType type, Segment seg) {
+        DocumentMarks result = null;
+        if (MarkDetector.applies(type.code())) {
+            result = MarkParser.undetermined();
+            if (props.visualMarks() && TextExtractor.renderable(job.mime())) {
+                int from = Math.max(seg.fromPage(), seg.toPage() - MarkDetector.LAST_PAGES + 1);
+                try {
+                    List<byte[]> images = texts.images(content.get(), job.mime(), from, seg.toPage());
+                    result = metrics.time("marks", () -> marks.detect(documentId, type, images));
+                } catch (UncheckedIOException broken) {
+                    LOG.info("marks undetermined doc={}: страницы не отрисованы", documentId);
+                }
+            }
+        }
+        return result;
+    }
+
+    private static List<PageQuality> pageQuality(List<PageText> pages, Segment seg) {
+        List<PageQuality> result = pages.stream()
+                .filter(page -> page.page() >= seg.fromPage() && page.page() <= seg.toPage())
+                .map(PageText::quality)
+                .filter(Objects::nonNull)
+                .toList();
+        return result.isEmpty() ? null : result;
     }
 
     private String docText(List<PageText> pages, Segment seg) {

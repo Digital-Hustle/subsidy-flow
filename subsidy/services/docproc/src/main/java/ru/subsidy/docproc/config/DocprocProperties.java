@@ -21,10 +21,12 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * @param maxCharsPerDocument символов документа для извлечения полей
  * @param visionOcrMinConf средняя уверенность OCR страницы (0..1), ниже которой страница считается слабой и при
  *                         visionFallback уходит модели и картинкой (DP-14)
+ * @param visualMarks визуальная проверка подписи и печати vision-моделью (B2-2), независимо от visionFallback
  */
 @ConfigurationProperties("app.docproc")
 public record DocprocProperties(int workers, Duration lease, int maxAttempts, Duration modelRetryDelay,
                                 String packageUrl, String ocrUrl, BigDecimal classifyMinConfidence,
                                 BigDecimal fieldReviewThreshold, boolean visionFallback, int maxCharsPerPage,
-                                int maxCharsPerDocument, BigDecimal visionOcrMinConf) {
+                                int maxCharsPerDocument, BigDecimal visionOcrMinConf,
+                                boolean visualMarks) {
 }

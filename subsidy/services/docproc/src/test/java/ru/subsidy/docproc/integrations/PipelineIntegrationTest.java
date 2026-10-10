@@ -169,6 +169,16 @@ class PipelineIntegrationTest extends AbstractIntegrationTest {
         List<String> types = dsl.select(Tables.OUTBOX.MESSAGE_KEY, Tables.OUTBOX.PAYLOAD).from(Tables.OUTBOX)
                 .where(Tables.OUTBOX.MESSAGE_KEY.eq(ids[0].toString())).fetch(row -> row.value2().data());
         assertThat(String.join("\n", types)).contains("DocumentsSegmented").contains("DocumentParsed");
+
+        mockMvc
+                .perform(get("/api/v1/documents/" + objectMapper.readTree(body).path("items").path(0)
+                        .path("documentId").asText() + "/result").with(authentication(user("SPECIALIST"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.marks.signature.status").value("DETECTED"))
+                .andExpect(jsonPath("$.marks.signature.source").value("IMAGE"))
+                .andExpect(jsonPath("$.marks.stamp.status").value("UNDETERMINED"))
+                .andExpect(jsonPath("$.pageQuality").doesNotExist());
+        assertThat(String.join("\n", types)).contains("\"marks\"").contains("\"signature\"");
     }
 
     @Test
@@ -286,6 +296,10 @@ class PipelineIntegrationTest extends AbstractIntegrationTest {
                         throw new ModelUnavailableException("down", null);
                     }
                     ObjectNode root = json.createObjectNode();
+                    if ("DETECTING_MARKS".equals(rq.stage())) {
+                        assertThat(rq.images()).as("признаки — только по изображению страницы").isNotEmpty();
+                        return new LlmResult(marks(json), "fake", "fake-vision", 1, null, null, 1);
+                    }
                     if ("CLASSIFYING".equals(rq.stage())) {
                         root.putArray("segments")
                                 .add(segment(json, 1, 1, "APPLICATION"))
@@ -312,6 +326,15 @@ class PipelineIntegrationTest extends AbstractIntegrationTest {
         private static ObjectNode segment(ObjectMapper json, int first, int last, String type) {
             return json.createObjectNode().put("fromPage", first).put("toPage", last).put("type", type)
                     .put("confidence", 0.95).put("evidence", type);
+        }
+
+        private static ObjectNode marks(ObjectMapper json) {
+            ObjectNode marks = json.createObjectNode();
+            marks.putObject("signature").put("status", "DETECTED").put("confidence", 0.9)
+                    .put("basis", "росчерк под подписью");
+            marks.putObject("stamp").put("status", "UNDETERMINED").put("confidence", 0.0)
+                    .put("basis", "оттиск не различим");
+            return marks;
         }
     }
 }
