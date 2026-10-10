@@ -1,7 +1,7 @@
 /** Типы rules (docs/API.md §rules). Статусы, суммы и вердикты считает сервер — клиент только показывает. */
-export type RuleStatus = "PASSED" | "FAILED" | "WARNING" | "DATA_MISSING" | "NOT_APPLICABLE" | "ERROR";
+export type RuleOutcome = "PASSED" | "FAILED" | "WARNING" | "DATA_MISSING" | "NOT_APPLICABLE" | "ERROR";
 export type Evidence = { documentId?: string | null; field?: string | null; page?: number | null };
-export type RuleResult = { rule: string; status: RuleStatus | string; message?: string; evidence?: Evidence[] | null; expected?: string | null; actual?: string | null };
+export type RuleResult = { rule: string; status: RuleOutcome | string; message?: string; evidence?: Evidence[] | null; expected?: string | null; actual?: string | null };
 export type ChecklistItem = { item: string; title?: string; kind?: string; types?: string[]; condition?: string | null; conditionText?: string | null; status?: string; documents?: string[] };
 export type MissingItem = { item?: string; type: string; reason?: string };
 export type Protocol = {
