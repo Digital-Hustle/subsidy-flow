@@ -1,0 +1,8 @@
+# Контекст для Dockerfile.src: нужны исходники целиком (общий .dockerignore пропускает только готовые jar).
+# BuildKit берёт <Dockerfile>.dockerignore вместо .dockerignore.
+**/build/
+**/.gradle/
+.gradle/
+ocr/
+**/.venv/
+**/__pycache__/

@@ -1,0 +1,29 @@
+# Сборка сервиса из исходников прямо в docker build: docker build --build-arg SERVICE=package -f Dockerfile.src .
+# Для сервисов с jOOQ внутри стадии сборки поднимается временный PostgreSQL: Liquibase → codegen → bootJar.
+FROM eclipse-temurin:21-jdk AS build
+ARG SERVICE
+RUN apt-get update -qq && apt-get install -y -qq --no-install-recommends postgresql >/dev/null && rm -rf /var/lib/apt/lists/*
+WORKDIR /src
+COPY . .
+RUN set -e; \
+    if grep -q 'subsidy.jooq' ${SERVICE}/build.gradle.kts; then \
+      PGBIN=$(ls -d /usr/lib/postgresql/*/bin | head -1); mkdir -p /tmp/pg && chown postgres /tmp/pg; \
+      su postgres -c "$PGBIN/initdb -D /tmp/pg -U postgres --auth=trust >/dev/null && $PGBIN/pg_ctl -D /tmp/pg -o '-k /tmp' -w start >/dev/null"; \
+      su postgres -c "psql -h localhost -U postgres -qc 'create database ${SERVICE}'"; \
+      ./gradlew --no-daemon -q :${SERVICE}:update :${SERVICE}:bootJar -x test; \
+    else \
+      ./gradlew --no-daemon -q :${SERVICE}:bootJar -x test; \
+    fi; \
+    cp ${SERVICE}/build/libs/${SERVICE}.jar /app.jar; \
+    java -Djarmode=tools -jar /app.jar extract --layers --launcher --destination /out
+
+FROM eclipse-temurin:21-jre
+RUN useradd -r -u 10001 app
+WORKDIR /app
+COPY --from=build /out/dependencies/ ./
+COPY --from=build /out/spring-boot-loader/ ./
+COPY --from=build /out/snapshot-dependencies/ ./
+COPY --from=build /out/application/ ./
+USER 10001
+ENV JAVA_TOOL_OPTIONS="-XX:MaxRAMPercentage=75 -XX:+ExitOnOutOfMemoryError"
+ENTRYPOINT ["java", "org.springframework.boot.loader.launch.JarLauncher"]

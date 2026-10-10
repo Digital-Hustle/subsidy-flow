@@ -1,0 +1,48 @@
+[versions]
+json-schema-validator = "1.5.9"
+spring-boot = "3.5.16"
+spring-cloud = "2025.0.3"
+spring-dependency-management = "1.1.7"
+jooq = "3.20.9"
+jooq-gradle = "10.2.1"
+liquibase-gradle = "3.1.0"
+liquibase = "4.31.1"          # = версия из BOM Boot 3.5.16; нужна build-logic для плагина
+postgresql = "42.7.11"
+picocli = "4.7.5"
+springdoc = "2.8.17"
+mapstruct = "1.6.3"
+lombok-mapstruct-binding = "0.2.0"
+resilience4j = "2.2.0"
+archunit = "1.5.0"
+uuid-creator = "6.1.1"
+checkstyle = "13.0.0"
+tika = "3.2.3"
+pdfbox = "3.0.8"
+twelvemonkeys = "3.12.0"
+poi = "5.5.1"
+commons-compress = "1.28.0"
+
+[libraries]
+json-schema-validator = { module = "com.networknt:json-schema-validator", version.ref = "json-schema-validator" }
+tika-core = { module = "org.apache.tika:tika-core", version.ref = "tika" }
+pdfbox = { module = "org.apache.pdfbox:pdfbox", version.ref = "pdfbox" }
+imageio-jpeg = { module = "com.twelvemonkeys.imageio:imageio-jpeg", version.ref = "twelvemonkeys" }
+imageio-tiff = { module = "com.twelvemonkeys.imageio:imageio-tiff", version.ref = "twelvemonkeys" }
+poi-ooxml = { module = "org.apache.poi:poi-ooxml", version.ref = "poi" }
+commons-compress = { module = "org.apache.commons:commons-compress", version.ref = "commons-compress" }
+spring-boot-gradle-plugin = { module = "org.springframework.boot:spring-boot-gradle-plugin", version.ref = "spring-boot" }
+dependency-management-plugin = { module = "io.spring.gradle:dependency-management-plugin", version.ref = "spring-dependency-management" }
+jooq-gradle-plugin = { module = "nu.studer:gradle-jooq-plugin", version.ref = "jooq-gradle" }
+liquibase-gradle-plugin = { module = "org.liquibase:liquibase-gradle-plugin", version.ref = "liquibase-gradle" }
+liquibase-core = { module = "org.liquibase:liquibase-core", version.ref = "liquibase" }
+
+springdoc-webmvc = { module = "org.springdoc:springdoc-openapi-starter-webmvc-ui", version.ref = "springdoc" }
+springdoc-webflux = { module = "org.springdoc:springdoc-openapi-starter-webflux-ui", version.ref = "springdoc" }
+mapstruct = { module = "org.mapstruct:mapstruct", version.ref = "mapstruct" }
+mapstruct-processor = { module = "org.mapstruct:mapstruct-processor", version.ref = "mapstruct" }
+lombok-mapstruct-binding = { module = "org.projectlombok:lombok-mapstruct-binding", version.ref = "lombok-mapstruct-binding" }
+resilience4j-spring-boot = { module = "io.github.resilience4j:resilience4j-spring-boot3", version.ref = "resilience4j" }
+uuid-creator = { module = "com.github.f4b6a3:uuid-creator", version.ref = "uuid-creator" }
+archunit = { module = "com.tngtech.archunit:archunit-junit5", version.ref = "archunit" }
+postgresql = { module = "org.postgresql:postgresql", version.ref = "postgresql" }
+picocli = { module = "info.picocli:picocli", version.ref = "picocli" }
