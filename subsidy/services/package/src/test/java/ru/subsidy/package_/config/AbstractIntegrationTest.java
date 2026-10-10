@@ -14,6 +14,8 @@ import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.kafka.KafkaContainer;
 
 import ru.subsidy.common.testing.OutboxContract;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import ru.subsidy.package_.pkg.ProgramCatalogClient;
 
 /**
  * База для всех *IntegrationTest: Postgres и Kafka в Testcontainers, общие зависимости — protected.
@@ -44,6 +46,9 @@ public abstract class AbstractIntegrationTest {
 
     @Autowired
     protected ObjectMapper objectMapper;
+
+    @MockitoBean
+    protected ProgramCatalogClient programCatalog;
 
     /**
      * Каждое событие, записанное тестом в outbox, — по contracts/events (PLT-04).

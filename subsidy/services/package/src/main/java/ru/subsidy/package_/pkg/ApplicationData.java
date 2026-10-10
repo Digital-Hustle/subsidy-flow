@@ -2,6 +2,7 @@ package ru.subsidy.package_.pkg;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -25,6 +26,7 @@ import jakarta.validation.constraints.Size;
  * @param applicationDate дата заявки
  * @param signatory подписант
  * @param property участок, если применимо
+ * @param conditions применимость условных документов для этого проекта; отсутствующий ключ неизвестен
  */
 public record ApplicationData(
         @NotBlank @Pattern(regexp = "[0-9]{10}|[0-9]{12}") String orgInn,
@@ -37,12 +39,35 @@ public record ApplicationData(
         @JsonFormat(shape = JsonFormat.Shape.STRING) BigDecimal requestedAmount,
         @NotNull LocalDate applicationDate,
         @NotNull @Valid Signatory signatory,
-        @Valid Property property) {
+        @Valid Property property,
+        @Schema(nullable = true, description = "Условия конкретного проекта; отсутствующий ключ — неизвестно")
+        @Size(max = ApplicationData.CONDITIONS_MAX)
+        Map<@Pattern(regexp = "[A-Za-z][A-Za-z0-9_]{0,63}") String, @NotNull Boolean> conditions) {
 
     private static final int NAME_MAX = 500;
     private static final int TEXT_MAX = 2000;
     private static final int PROJECT_MAX = 4000;
     private static final int MONEY_DIGITS = 17;
+    private static final int CONDITIONS_MAX = 50;
+
+    /**
+     * Совместимость с формой без условий проекта.
+     *
+     * @param orgInn ИНН
+     * @param orgName название
+     * @param ogrn ОГРН
+     * @param address адрес
+     * @param project проект
+     * @param requestedAmount сумма
+     * @param applicationDate дата
+     * @param signatory подписант
+     * @param property участок
+     */
+    public ApplicationData(String orgInn, String orgName, String ogrn, Address address, String project,
+                           BigDecimal requestedAmount, LocalDate applicationDate, Signatory signatory,
+                           Property property) {
+        this(orgInn, orgName, ogrn, address, project, requestedAmount, applicationDate, signatory, property, null);
+    }
 
     /**
      * Адрес заявки.

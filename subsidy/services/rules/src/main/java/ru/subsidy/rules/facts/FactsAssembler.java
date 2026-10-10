@@ -70,7 +70,8 @@ public class FactsAssembler {
         List<FileFacts> files = dsl.selectFrom(Tables.PACKAGE_FILES)
                 .where(Tables.PACKAGE_FILES.PACKAGE_ID.eq(packageId)).and(Tables.PACKAGE_FILES.REMOVED.isFalse())
                 .orderBy(Tables.PACKAGE_FILES.FILE_ID)
-                .fetch(rec -> new FileFacts(rec.getFileId(), rec.getVersion(), rec.getStage(), rec.getReasonCode()));
+                .fetch(rec -> new FileFacts(rec.getFileId(), rec.getVersion(), rec.getStage(), rec.getReasonCode(),
+                        SignatureFacts.stored(rec.getSignatureStatus(), rec.getSignatureReason())));
         LocalDate packageDate = view.getCreatedAt().atZoneSameInstant(props.zone()).toLocalDate();
         // анкета — снимок для перепроверки; сроки и даты правила считают от сегодняшней даты, не от введённой вручную
         JsonNode application = view.getApplication() == null ? null : read(view.getApplication().data());

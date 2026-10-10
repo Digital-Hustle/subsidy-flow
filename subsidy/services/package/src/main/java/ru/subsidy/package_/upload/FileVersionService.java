@@ -113,7 +113,8 @@ public class FileVersionService {
         touch(packageId, now);
         outbox.append(Topics.PACKAGE_FILE_V1, "FileReplaced", fileId.toString(), Map.of(
                 FILE_ID, fileId.toString(), PACKAGE_ID, packageId.toString(), "version", version,
-                "previousVersion", current, "mime", result.mime(), "pages", result.pages()));
+                "previousVersion", current, "mime", result.mime(), "pages", result.pages(),
+                "electronicSignature", result.electronicSignature()));
         return new UploadResult(List.of(new AcceptedFile(fileId, UploadService.RECEIVED, null)), List.of());
     }
 

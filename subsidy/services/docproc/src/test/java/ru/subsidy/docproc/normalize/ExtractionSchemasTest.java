@@ -40,6 +40,23 @@ class ExtractionSchemasTest {
     }
 
     @Test
+    void applicationAddressesKeepTheirPurpose_andCertificateApplicantIsSeparateFromManufacturer() throws Exception {
+        List<FieldValue> addresses = normalize("APPLICATION", """
+                {"legalAddress":"Москва, ул. Тестовая, 1","actualAddress":"Ростов, ул. Тестовая, 2"}
+                """);
+        assertThat(field(addresses, "legalAddress").value().asText()).isEqualTo("Москва, ул. Тестовая, 1");
+        assertThat(field(addresses, "actualAddress").value().asText()).isEqualTo("Ростов, ул. Тестовая, 2");
+        assertThat(addresses.stream().map(FieldValue::name)).doesNotContain("projectAddress");
+        List<FieldValue> certificate = normalize("CERTIFICATE", """
+                {"orgName":"Производитель","inn":"6103050782","applicantName":"ООО Заявитель","applicantInn":"7707083893"}
+                """);
+        assertThat(field(certificate, "applicantName").value().asText()).isEqualTo("ООО Заявитель");
+        assertThat(field(certificate, "applicantInn").value().asText()).isEqualTo("7707083893");
+        assertThat(type("APPLICATION").version()).isEqualTo("5");
+        assertThat(type("CERTIFICATE").version()).isEqualTo("5");
+    }
+
+    @Test
     void propertyDoc_keepsAddressesWithPurposePerAddress() throws Exception {
         List<FieldValue> fields = normalize("PROPERTY_DOC", """
                 {"cadastralNumber": "61:18:0600022:891",

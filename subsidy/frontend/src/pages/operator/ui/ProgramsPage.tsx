@@ -1,84 +1,99 @@
 import { useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { motion } from "motion/react";
-import { ChevronDown, PencilLine, ScrollText } from "lucide-react";
-import { protocolApi, protocolKeys, type Program } from "@/entities/protocol";
+import { CalendarClock, ChevronDown, History, ScrollText } from "lucide-react";
+import { dateRuFull, dateTimeRu } from "@/entities/application";
+import { protocolApi, protocolKeys, ruleTitle, type Program } from "@/entities/protocol";
 import { typeTitle } from "@/entities/document";
 import { can, useSession } from "@/entities/session";
+import { CreateProgramButton, EditProgramButton } from "@/features/edit-program";
 import { errorText } from "@/shared/api";
-import { AutoHeight, Button, Card, CardContent, CardHeader, CardTitle, Dialog, EmptyState, Field, Input, PageHeader, RowsSkeleton, Status, Textarea, toast } from "@/shared/ui";
+import { AutoHeight, Button, Card, CardContent, CardHeader, CardTitle, EmptyState, PageHeader, RowsSkeleton, Status } from "@/shared/ui";
 import { cn } from "@/shared/lib";
 import { fadeUp, stagger } from "@/shared/config/motion";
 
-const JSON_INDENT = 2;
-const pretty = (v: unknown) => JSON.stringify(v, null, JSON_INDENT);
-const parse = (s: string): { ok: true; v: unknown } | { ok: false } => { try { return { ok: true, v: JSON.parse(s) as unknown }; } catch { return { ok: false }; } };
+const KIND_LABEL: Record<string, string> = { REQUIRED: "обязательно", CONDITIONAL: "по условию", ONE_OF: "один из" };
 
-/** Правка программы (SENIOR): параметры и перечень — JSON, проверяет и версионирует rules. */
-const EditProgram = ({ p }: { p: Program }) => {
-  const qc = useQueryClient();
-  const [open, setOpen] = useState(false);
-  const [name, setName] = useState(p.name ?? "");
-  const [params, setParams] = useState(pretty(p.params));
-  const [checklist, setChecklist] = useState(pretty(p.checklist));
-  const pp = parse(params);
-  const pc = parse(checklist);
-  const save = useMutation({
-    mutationFn: () => protocolApi.saveProgram(p.code, { name: name.trim(), params: pp.ok ? pp.v : null, checklist: pc.ok ? pc.v : null }),
-    onSuccess: () => { setOpen(false); toast.success("Сохранена новая версия программы"); void qc.invalidateQueries({ queryKey: protocolKeys.programs }); },
-  });
-  const valid = name.trim().length > 0 && pp.ok && pc.ok;
+/** История версий программы (rules /programs/{code}/versions), новые первыми. */
+const ProgramVersions = ({ code }: { code: string }) => {
+  const q = useQuery({ queryKey: protocolKeys.programVersions(code), queryFn: () => protocolApi.programVersions(code) });
+  if (q.isPending) return <RowsSkeleton rows={2} />;
+  if (q.isError) return <p className="text-sm text-muted-foreground">История не загрузилась: {errorText(q.error)} <Button size="sm" variant="quiet" onClick={() => q.refetch()}>Повторить</Button></p>;
   return (
-    <>
-      <Button size="sm" variant="secondary" onClick={() => { setName(p.name ?? ""); setParams(pretty(p.params)); setChecklist(pretty(p.checklist)); setOpen(true); }}><PencilLine />Изменить</Button>
-      <Dialog open={open} onClose={() => setOpen(false)} title={`Программа ${p.code}`} description="Новая версия применится к следующим проверкам; старые протоколы не меняются"
-        footer={<Button disabled={!valid || save.isPending} onClick={() => save.mutate()}>{save.isPending ? "Сохраняем…" : "Сохранить версию"}</Button>}>
-        <div className="flex flex-col gap-4">
-          <Field label="Название"><Input value={name} onChange={(e) => setName(e.target.value)} /></Field>
-          <Field label="Параметры (JSON)" error={pp.ok ? null : "Некорректный JSON"}><Textarea rows={6} className="font-mono text-sm" value={params} onChange={(e) => setParams(e.target.value)} /></Field>
-          <Field label="Перечень документов (JSON)" error={pc.ok ? null : "Некорректный JSON"}><Textarea rows={10} className="font-mono text-sm" value={checklist} onChange={(e) => setChecklist(e.target.value)} /></Field>
-          {save.isError && <p className="text-sm text-danger">{errorText(save.error)}</p>}
-        </div>
-      </Dialog>
-    </>
+    <ol className="flex flex-col gap-1">
+      {q.data.map((v) => (
+        <li key={v.version} className="flex flex-wrap gap-x-2 text-sm"><span className="font-medium">Версия {v.version}</span><span className="text-muted-foreground">{v.name}</span><span className="text-xs text-subtle-foreground">{v.updatedAt ? dateTimeRu(v.updatedAt) : ""}{v.updatedBy ? ` · ${v.updatedBy}` : ""}</span></li>
+      ))}
+    </ol>
   );
 };
 
-/** Программы субсидий — перечень документов и параметры правил; правит только старший специалист (новая версия). */
+const ProgramDetails = ({ p }: { p: Program }) => {
+  const [history, setHistory] = useState(false);
+  const rules = p.params?.rules ?? [];
+  return (
+    <CardContent className="flex flex-col gap-4">
+      {p.params?.description && <p className="whitespace-pre-line text-sm">{p.params.description}</p>}
+      <div className="flex flex-col gap-1.5">
+        <h3 className="text-xs font-medium uppercase text-muted-foreground">Документы</h3>
+        <ul className="flex flex-col gap-1.5">
+          {(p.checklist ?? []).map((c) => (
+            <li key={c.item} className="-mx-2 flex flex-wrap items-center gap-2 rounded-md px-2 py-1 text-sm transition-colors duration-fast hover:bg-muted">
+              <span>{c.title ?? c.item}</span>
+              <span className="text-xs text-muted-foreground">({(c.types ?? []).map(typeTitle).join(", ")})</span>
+              {c.conditionText && <span className="text-xs text-muted-foreground">· {c.conditionText}</span>}
+              <Status className="ml-auto" tone={c.kind === "REQUIRED" ? "info" : "neutral"}>{KIND_LABEL[c.kind ?? "REQUIRED"] ?? c.kind}</Status>
+            </li>
+          ))}
+        </ul>
+      </div>
+      {!!rules.length && (
+        <div className="flex flex-col gap-1.5">
+          <h3 className="text-xs font-medium uppercase text-muted-foreground">Проверки</h3>
+          <ul className="flex flex-wrap gap-1.5">
+            {rules.map((r) => <li key={r.code}><Status tone={r.enabled === false ? "neutral" : r.severity === "WARNING" ? "warning" : "info"}>{r.title ?? ruleTitle(r.code)}{r.enabled === false ? " — выкл." : ""}</Status></li>)}
+          </ul>
+        </div>
+      )}
+      <div className="flex flex-col gap-2">
+        <Button size="sm" variant="quiet" className="self-start" onClick={() => setHistory((h) => !h)} aria-expanded={history}><History />История версий</Button>
+        <AutoHeight>{history && <ProgramVersions code={p.code} />}</AutoHeight>
+      </div>
+    </CardContent>
+  );
+};
+
+/** Программы субсидий: документы, проверки, срок приёма; создаёт и меняет только старший специалист (новая версия). */
 export const ProgramsPage = () => {
   const { roles } = useSession();
   const q = useQuery({ queryKey: protocolKeys.programs, queryFn: protocolApi.programs });
   const [open, setOpen] = useState<string | null>(null);
+  const editor = can(roles, "programs");
+  const programs = q.data ?? [];
   return (
     <>
-      <PageHeader title="Программы" sub="Условия программ: какие документы нужны и с какими параметрами работают проверки" />
+      <PageHeader title="Программы" sub="Условия программ: какие документы нужны и с какими параметрами работают проверки"
+        actions={editor && q.isSuccess ? <CreateProgramButton programs={programs} /> : undefined} />
       {q.isPending ? <Card className="overflow-hidden"><RowsSkeleton rows={4} /></Card> : q.isError ? (
         <EmptyState title="Программы не загрузились" text={errorText(q.error)} action={<Button variant="secondary" onClick={() => q.refetch()}>Повторить</Button>} />
-      ) : !q.data.length ? <Card><EmptyState icon={<ScrollText />} title="Программ нет" className="py-16" /></Card> : (
+      ) : !programs.length ? <Card><EmptyState icon={<ScrollText />} title="Программ нет" text={editor ? "Создайте первую программу — кнопка «Новая программа»" : undefined} className="py-16" /></Card> : (
         <motion.div variants={stagger(0.05)} initial="hidden" animate="show" className="flex flex-col gap-3">
-          {q.data.map((p) => (
-            <motion.div key={p.code} variants={fadeUp}><Card className="overflow-hidden">
+          {programs.map((p) => (
+            <motion.div key={p.code} variants={fadeUp} layout><Card className="overflow-hidden">
               <CardHeader className="flex flex-row flex-wrap items-center gap-2">
                 <button type="button" className="group flex min-w-0 flex-1 items-start gap-3 rounded-md text-left outline-none focus-visible:ring-2 focus-visible:ring-ring" onClick={() => setOpen(open === p.code ? null : p.code)} aria-expanded={open === p.code}>
                   <span className="grid size-10 shrink-0 place-items-center rounded-md bg-muted text-muted-foreground transition-colors duration-fast group-hover:text-foreground"><ScrollText className="size-5" /></span>
                   <span className="min-w-0 flex-1">
-                  <CardTitle className="flex items-center gap-1">{p.name}<ChevronDown className={cn("size-4 shrink-0 text-subtle-foreground transition-transform duration-base", open === p.code && "rotate-180")} /></CardTitle>
-                  <p className="text-xs text-muted-foreground">{p.code} · версия {p.version} · документов {p.checklist?.length ?? 0}{p.updatedBy ? ` · изменил ${p.updatedBy}` : ""}</p>
+                    <CardTitle className="flex items-center gap-1">{p.name}<ChevronDown className={cn("size-4 shrink-0 text-subtle-foreground transition-transform duration-base", open === p.code && "rotate-180")} /></CardTitle>
+                    <p className="text-xs text-muted-foreground">{p.code} · версия {p.version} · документов {p.checklist?.length ?? 0}{p.updatedBy ? ` · изменил ${p.updatedBy}` : ""}</p>
+                    {p.params?.deadline && <p className="flex items-center gap-1 text-xs text-muted-foreground"><CalendarClock className="size-3.5" />приём до {dateRuFull(p.params.deadline)}</p>}
                   </span>
                 </button>
+                {p.accepting === false && <Status tone="warning">приём закрыт</Status>}
                 {p.demo && <Status tone="info">демо</Status>}
-                {can(roles, "programs") && <EditProgram p={p} />}
+                {editor && <EditProgramButton program={p} programs={programs} />}
               </CardHeader>
-              <AutoHeight>{open === p.code && (
-              <CardContent className="flex flex-col gap-3">
-                <ul className="flex flex-col gap-1.5">
-                  {(p.checklist ?? []).map((c) => (
-                    <li key={c.item} className="-mx-2 rounded-md px-2 py-1 text-sm transition-colors duration-fast hover:bg-muted">{c.title ?? c.item}{(c.conditionText ?? c.condition) && <span className="text-muted-foreground"> · {c.conditionText ?? c.condition}</span>}<span className="text-xs text-muted-foreground"> ({(c.types ?? []).map(typeTitle).join(", ")})</span></li>
-                  ))}
-                </ul>
-                <pre className="overflow-x-auto rounded-md bg-muted p-3 text-xs">{pretty(p.params)}</pre>
-              </CardContent>
-              )}</AutoHeight>
+              <AutoHeight>{open === p.code && <ProgramDetails p={p} />}</AutoHeight>
             </Card></motion.div>
           ))}
         </motion.div>

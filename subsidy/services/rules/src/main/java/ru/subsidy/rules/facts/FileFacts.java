@@ -9,11 +9,24 @@ import java.util.UUID;
  * @param version версия
  * @param stage стадия
  * @param reasonCode причина
+ * @param electronicSignature признак ЭП всего PDF
  */
-public record FileFacts(UUID fileId, int version, String stage, String reasonCode) {
+public record FileFacts(UUID fileId, int version, String stage, String reasonCode, SignatureFacts electronicSignature) {
 
     private static final String FAILED = "FAILED";
     private static final String UNREADABLE = "UNREADABLE";
+
+    /**
+     * Совместимость со старыми событиями без проверки ЭП.
+     *
+     * @param fileId файл
+     * @param version версия
+     * @param stage стадия
+     * @param reasonCode причина
+     */
+    public FileFacts(UUID fileId, int version, String stage, String reasonCode) {
+        this(fileId, version, stage, reasonCode, SignatureFacts.stored(null, null));
+    }
 
     /**
      * Разбор файла закончен (успешно или нет).

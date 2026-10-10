@@ -3,6 +3,7 @@
 Память модуля. §1 — перезаписываемое текущее состояние (≤ 10 строк). §2 — карта, обновлять при новых пакетах/файлах. §3–4 — добавлять строки, неактуальное ~~зачёркивать~~. §5 — **только дописывать в конец** (`merge=union`). Решения для всей системы — ADR в `../../../docs/DECISIONS.md`.
 
 ## 1. Текущее состояние
+- B3: схемы APPLICATION/CERTIFICATE v5 добавляют адреса и явно указанного заявителя; схемы PROPERTY_DOC/GUARANTEE_LETTER v5 включают поля из PR #4. PR #9.
 - DP-01..11, 13 готовы (#38). DP-12: таблицы из ocr (`pages[].tables`, OCR-06) → `PageText.tables` → в текст для извлечения полей (`textWithTables`), классификатор их не видит. PDF с текстовым слоем тоже идёт через ocr (ради таблиц); ocr недоступен → текст PDFBox без таблиц.
 - Открытые вопросы: точный список 8 видов (PLT-00); есть ли склейки в закрытом наборе.
 
@@ -27,3 +28,5 @@
 ## 5. Журнал изменений (дописывать в конец)
 - 2026-10-09 · miroslavrov · docs: документы модуля
 - 2026-10-10 · KIRI4444 · B2-1 (DP-17, PR #4): PROPERTY_DOC — addresses[] с назначением, rightHolder/tenant; GUARANTEE_LETTER — guarantor*/beneficiary* + inn для совместимости; схемы v5. B2-3 (DP-18, PR #10): PageQualityAssessor — UNREADABLE с причиной, PARTIAL_SCAN → NEEDS_REVIEW. B2-2/B2-4 (DP-19): extract.v2 + marks {signature, stamp}, parse_results.marks/page_quality, DocumentParsed.marks/pageQuality, API.md. Ручная смена типа сохраняет source=SPECIALIST/reason/by (старое поведение).
+
+- 2026-10-10 · Codex · B3-1…B3-6: B3: схемы APPLICATION/CERTIFICATE v5 добавляют адреса и явно указанного заявителя; схемы PROPERTY_DOC/GUARANTEE_LETTER v5 включают поля из PR #4. PR #9.

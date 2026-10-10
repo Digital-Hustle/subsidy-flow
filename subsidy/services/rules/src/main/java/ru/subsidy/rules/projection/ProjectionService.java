@@ -23,6 +23,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import ru.subsidy.common.inbox.IdempotentConsumer;
 import ru.subsidy.rules.history.OrgHistoryService;
+import ru.subsidy.rules.facts.SignatureFacts;
 import ru.subsidy.rules.jooq.Tables;
 import ru.subsidy.rules.recheck.RecheckRequests;
 
@@ -58,6 +59,7 @@ public class ProjectionService {
     private static final String INN = "inn";
     private static final String ORG_ID = "orgId";
     private static final String APPLICATION_REVISION = "applicationRevision";
+    private static final String SIGNATURE = "electronicSignature";
 
     private final DSLContext dsl;
     private final IdempotentConsumer inbox;
@@ -161,16 +163,24 @@ public class ProjectionService {
         UUID packageId = uuid(payload, PACKAGE_ID);
         int version = payload.path(VERSION).asInt(1);
         OffsetDateTime now = OffsetDateTime.now(clock);
+        var signature = SignatureFacts.stored(text(payload.path(SIGNATURE), "status"),
+                text(payload.path(SIGNATURE), "reason"));
         dsl.insertInto(Tables.PACKAGE_FILES)
                 .set(Tables.PACKAGE_FILES.FILE_ID, fileId)
                 .set(Tables.PACKAGE_FILES.PACKAGE_ID, packageId)
                 .set(Tables.PACKAGE_FILES.VERSION, version)
                 .set(Tables.PACKAGE_FILES.STAGE, RECEIVED)
+                .set(Tables.PACKAGE_FILES.SIGNATURE_STATUS, signature.status())
+                .set(Tables.PACKAGE_FILES.SIGNATURE_REASON, signature.reason())
                 .set(Tables.PACKAGE_FILES.UPDATED_AT, now)
                 .onConflict(Tables.PACKAGE_FILES.FILE_ID).doUpdate()
                 .set(Tables.PACKAGE_FILES.VERSION, version)
-                .set(Tables.PACKAGE_FILES.STAGE, RECEIVED)
-                .set(Tables.PACKAGE_FILES.REASON_CODE, (String) null)
+                .set(Tables.PACKAGE_FILES.STAGE, DSL.when(Tables.PACKAGE_FILES.VERSION.lt(version), RECEIVED)
+                        .otherwise(Tables.PACKAGE_FILES.STAGE))
+                .set(Tables.PACKAGE_FILES.SIGNATURE_STATUS, signature.status())
+                .set(Tables.PACKAGE_FILES.SIGNATURE_REASON, signature.reason())
+                .set(Tables.PACKAGE_FILES.REASON_CODE, DSL.when(Tables.PACKAGE_FILES.VERSION.lt(version), (String) null)
+                        .otherwise(Tables.PACKAGE_FILES.REASON_CODE))
                 .set(Tables.PACKAGE_FILES.REMOVED, false)
                 .set(Tables.PACKAGE_FILES.UPDATED_AT, now)
                 .where(Tables.PACKAGE_FILES.VERSION.le(version))
@@ -178,6 +188,7 @@ public class ProjectionService {
         dsl.update(Tables.PACKAGE_DOCUMENTS).set(Tables.PACKAGE_DOCUMENTS.REMOVED, true)
                 .where(Tables.PACKAGE_DOCUMENTS.FILE_ID.eq(fileId)).and(Tables.PACKAGE_DOCUMENTS.FILE_VERSION.lt(version))
                 .execute();
+        recheck.request(packageId);
     }
 
     private void fileRemoved(JsonNode payload) {

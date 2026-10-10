@@ -18,7 +18,7 @@ import ru.subsidy.rules.program.Program;
 /**
  * Комплектность по чек-листу версии программы: обязательные, «один из», условные, дубликаты, неизвестные.
  * Нет обязательного — ошибка (протокол INCOMPLETE); нет условного — замечание и подсказка «можно дослать»
- * (п. 4.2 кейса). Флаг программы с именем из condition (= true) делает условный документ обязательным.
+ * (п. 4.2 кейса). Условие относится к конкретному проекту: application.conditions, а не params программы.
  * Считается по определённому виду документа, а не по файлу.
  */
 @Component
@@ -31,7 +31,6 @@ public class CompletenessEngine {
     private static final String DUPLICATE = "CHK_DUPLICATE";
     private static final String UNKNOWN = "CHK_UNKNOWN";
     private static final String OR = " или ";
-    private static final String REQUIRED_MARK = " — обязателен";
     private static final String OPEN = " (";
     private static final String CLOSE = ")";
     private static final int PERCENT = 100;
@@ -49,34 +48,47 @@ public class CompletenessEngine {
         List<RuleResult> duplicates = new ArrayList<>();
         List<Missing> optional = new ArrayList<>();
         for (ChecklistItem item : program.checklist()) {
-            List<DocFacts> docs = item.types().stream().flatMap(type -> facts.ofType(type).stream()).toList();
-            if (docs.isEmpty()) {
-                (conditional(item, program) ? optional : missing).add(lack(item));
-            }
-            if (item.single() && docs.size() > 1) {
-                duplicates.add(duplicate(item, docs));
-            }
-            items.add(new ItemResult(item.item(), item.title(), item.kind(), item.types(), item.conditionText(),
-                    docs.isEmpty() ? ItemResult.MISSING : ItemResult.OK,
-                    docs.stream().map(DocFacts::documentId).toList()));
+            addItem(item, facts, items, missing, optional, duplicates);
         }
         List<RuleResult> results = new ArrayList<>();
         results.add(kindResult(REQUIRED, ChecklistItem.REQUIRED, items));
         results.add(kindResult(ONE_OF, ChecklistItem.ONE_OF, items));
-        results.add(conditionalResult(program, items));
+        results.add(conditionalResult(items));
         results.addAll(duplicates.isEmpty()
                 ? List.of(RuleResult.passed(DUPLICATE, "Лишних дубликатов нет", List.of())) : duplicates);
         results.add(unknown(facts));
-        long applicable = items.stream().filter(item -> !ChecklistItem.CONDITIONAL.equals(item.kind())).count();
-        long done = items.stream().filter(item -> !ChecklistItem.CONDITIONAL.equals(item.kind()))
+        long applicable = items.stream().filter(item -> Boolean.TRUE.equals(item.applicable())).count();
+        long done = items.stream().filter(item -> Boolean.TRUE.equals(item.applicable()))
                 .filter(item -> ItemResult.OK.equals(item.status())).count();
         int percent = applicable == 0 ? PERCENT : (int) (done * PERCENT / applicable);
         return new Completeness(items, missing, percent, results, request(missing, optional));
     }
 
-    private static boolean conditional(ChecklistItem item, Program program) {
-        return ChecklistItem.CONDITIONAL.equals(item.kind())
-                && (item.condition() == null || !program.params().flag(item.condition()));
+    private static void addItem(ChecklistItem item, PackageFacts facts, List<ItemResult> items, List<Missing> missing,
+                                 List<Missing> optional, List<RuleResult> duplicates) {
+        List<DocFacts> docs = item.types().stream().flatMap(type -> facts.ofType(type).stream()).toList();
+        Boolean applies = applicability(item, facts);
+        if (docs.isEmpty() && !Boolean.FALSE.equals(applies)) {
+            (ChecklistItem.CONDITIONAL.equals(item.kind()) ? optional : missing).add(lack(item));
+        }
+        if (!Boolean.FALSE.equals(applies) && item.single() && docs.size() > 1) {
+            duplicates.add(duplicate(item, docs));
+        }
+        String status = Boolean.FALSE.equals(applies) ? ItemResult.NOT_APPLICABLE
+                : docs.isEmpty() ? ItemResult.MISSING : ItemResult.OK;
+        items.add(new ItemResult(item.item(), item.title(), item.kind(), item.types(), item.conditionText(), status,
+                docs.stream().map(DocFacts::documentId).toList(), applies));
+    }
+
+    private static Boolean applicability(ChecklistItem item, PackageFacts facts) {
+        if (!ChecklistItem.CONDITIONAL.equals(item.kind())) {
+            return Boolean.TRUE;
+        }
+        if (item.condition() == null || facts.application() == null) {
+            return null;
+        }
+        var value = facts.application().path("conditions").path(item.condition());
+        return value.isBoolean() ? value.asBoolean() : null;
     }
 
     private static Missing lack(ChecklistItem item) {
@@ -90,7 +102,8 @@ public class CompletenessEngine {
     }
 
     private static String reason(ChecklistItem item) {
-        String base = ChecklistItem.ONE_OF.equals(item.kind()) ? "Нужен любой из документов: " : "Обязательный документ: ";
+        String base = ChecklistItem.ONE_OF.equals(item.kind()) ? "Нужен любой из документов: "
+                : ChecklistItem.CONDITIONAL.equals(item.kind()) ? "Условный документ: " : "Обязательный документ: ";
         String text = base + item.title();
         return item.conditionText() == null ? text : text + OPEN + item.conditionText() + CLOSE;
     }
@@ -110,32 +123,23 @@ public class CompletenessEngine {
         return result;
     }
 
-    private static RuleResult conditionalResult(Program program, List<ItemResult> items) {
+    private static RuleResult conditionalResult(List<ItemResult> items) {
         List<ItemResult> ofKind = items.stream().filter(item -> ChecklistItem.CONDITIONAL.equals(item.kind()))
+                .filter(item -> !Boolean.FALSE.equals(item.applicable()))
                 .toList();
         List<String> lacking = ofKind.stream().filter(item -> ItemResult.MISSING.equals(item.status()))
-                .map(item -> label(program, item)).toList();
+                .map(item -> item.title() + (item.applicable() == null ? " — применимость для проекта не указана"
+                        : " — применяется к проекту")).toList();
         RuleResult result;
         if (ofKind.isEmpty()) {
-            result = RuleResult.notApplicable(CONDITIONAL, "Условных документов в перечне программы нет");
+            result = RuleResult.notApplicable(CONDITIONAL, "Условные документы не применяются к этому проекту");
         } else if (lacking.isEmpty()) {
             result = RuleResult.passed(CONDITIONAL, "Условные документы на месте", List.of());
-        } else if (lacking.stream().anyMatch(text -> text.endsWith(REQUIRED_MARK))) {
-            result = RuleResult.failed(CONDITIONAL, "Нет документа, обязательного по условию программы: "
-                    + String.join(SEMI, lacking), List.of(), null, null);
         } else {
             result = RuleResult.warning(CONDITIONAL, "Нет условного документа — проверьте, нужен ли он для проекта: "
                     + String.join(SEMI, lacking) + ". Его можно дослать в эту же заявку", List.of());
         }
         return result;
-    }
-
-    private static String label(Program program, ItemResult item) {
-        String condition = program.checklist().stream().filter(source -> source.item().equals(item.item()))
-                .map(ChecklistItem::condition).filter(flag -> flag != null && program.params().flag(flag))
-                .findFirst().orElse(null);
-        String text = item.title() + (item.condition() == null ? "" : OPEN + item.condition() + CLOSE);
-        return condition == null ? text : text + REQUIRED_MARK;
     }
 
     private static RuleResult unknown(PackageFacts facts) {

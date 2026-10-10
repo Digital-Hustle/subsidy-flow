@@ -13,6 +13,7 @@ public enum ErrorCode {
     PACKAGE_LOCKED,
     PACKAGE_DECIDED,
     PROGRAM_NOT_FOUND,
+    PROGRAM_EXISTS,
 
     // Файлы
     FILE_NOT_FOUND,

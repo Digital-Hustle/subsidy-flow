@@ -3,7 +3,7 @@
     "code": "APPLICATION",
     "name": "Заявление (заявка) на предоставление субсидии",
     "hints": "Заголовок «Заявление» или «Заявка на участие в отборе на предоставление субсидии», «прошу предоставить субсидию»; сведения о заявителе (наименование, ИНН, ОГРН/ОГРНИП), запрашиваемая сумма, бюджет проекта, подпись руководителя.",
-    "version": "4",
+    "version": "5",
     "kinds": {
       "orgName": "text",
       "inn": "inn",
@@ -13,7 +13,10 @@
       "totalCost": "money",
       "ownFunds": "money",
       "date": "date",
-      "signerName": "text"
+      "signerName": "text",
+      "legalAddress": "text",
+      "actualAddress": "text",
+      "projectAddress": "text"
     },
     "schema": {
       "type": "object",
@@ -80,6 +83,27 @@
             "null"
           ],
           "description": "ФИО подписанта"
+        },
+        "legalAddress": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Юридический адрес заявителя, если прямо указан; иначе null"
+        },
+        "actualAddress": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Фактический адрес заявителя, если прямо указан; иначе null"
+        },
+        "projectAddress": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Адрес реализации проекта, если прямо указан; иначе null"
         }
       },
       "required": [
@@ -91,7 +115,10 @@
         "totalCost",
         "ownFunds",
         "date",
-        "signerName"
+        "signerName",
+        "legalAddress",
+        "actualAddress",
+        "projectAddress"
       ],
       "additionalProperties": false
     }
@@ -143,14 +170,16 @@
     "code": "CERTIFICATE",
     "name": "Сертификат соответствия",
     "hints": "Заголовок «Сертификат соответствия», регистрационный номер (например, ЕАЭС RU С-…), орган по сертификации, продукция, срок действия «с … по …».",
-    "version": "4",
+    "version": "5",
     "kinds": {
       "number": "text",
       "issuer": "text",
       "orgName": "text",
       "inn": "inn",
       "issueDate": "date",
-      "validUntil": "date"
+      "validUntil": "date",
+      "applicantName": "text",
+      "applicantInn": "inn"
     },
     "schema": {
       "type": "object",
@@ -196,6 +225,20 @@
             "null"
           ],
           "description": "Срок действия — дата окончания"
+        },
+        "applicantName": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Заявитель сертификата; не производитель, если роли отличаются; иначе null"
+        },
+        "applicantInn": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "ИНН заявителя сертификата, только при явно указанной роли; иначе null"
         }
       },
       "required": [
@@ -204,7 +247,9 @@
         "orgName",
         "inn",
         "issueDate",
-        "validUntil"
+        "validUntil",
+        "applicantName",
+        "applicantInn"
       ],
       "additionalProperties": false
     }
@@ -604,7 +649,7 @@
             "string",
             "null"
           ],
-          "description": "ИНН заявителя субсидии для сверки INN_SAME: beneficiaryInn, а если письмо пишет сам заявитель — guarantorInn; ИНН стороннего гаранта сюда не ставить"
+          "description": "ИНН без явно указанной роли (совместимость с прежними результатами); не подтверждает получателя гарантии. Использовать guarantorInn / beneficiaryInn при явной роли."
         },
         "beneficiaryName": {
           "type": [

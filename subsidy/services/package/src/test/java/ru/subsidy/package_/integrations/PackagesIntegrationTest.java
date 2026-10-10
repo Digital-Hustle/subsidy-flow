@@ -5,6 +5,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.doThrow;
 
 import java.util.List;
 import java.util.UUID;
@@ -18,6 +20,8 @@ import com.jayway.jsonpath.JsonPath;
 
 import ru.subsidy.common.security.CurrentUser;
 import ru.subsidy.package_.config.AbstractIntegrationTest;
+import ru.subsidy.common.exception.DomainException;
+import ru.subsidy.common.exception.ErrorCode;
 
 class PackagesIntegrationTest extends AbstractIntegrationTest {
 
@@ -28,6 +32,23 @@ class PackagesIntegrationTest extends AbstractIntegrationTest {
         Jwt token = Jwt.withTokenValue("test").header("alg", "none")
                 .subject("user-" + role).claim("roles", List.of(role)).build();
         return new CurrentUser(token, List.of(new SimpleGrantedAuthority("ROLE_" + role)));
+    }
+
+    @Test
+    void newProgramIsValidatedThroughRules_andMissingOrUnavailableCatalogIsReported() throws Exception {
+        String body = "{\"orgInn\":\"" + INN + "\",\"programCode\":\"NEW_PROGRAM\"}";
+        mockMvc.perform(post("/api/v1/packages").with(authentication(user("SPECIALIST")))
+                        .contentType(MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isCreated()).andExpect(jsonPath("$.program").value("NEW_PROGRAM"));
+        verify(programCatalog).require("NEW_PROGRAM");
+        doThrow(new DomainException(ErrorCode.PROGRAM_NOT_FOUND, "Нет программы"))
+                .when(programCatalog).require("NEW_PROGRAM");
+        mockMvc.perform(post("/api/v1/packages").with(authentication(user("SPECIALIST")))
+                        .contentType(MediaType.APPLICATION_JSON).content(body)).andExpect(status().isNotFound());
+        doThrow(new DomainException(ErrorCode.DEPENDENCY_UNAVAILABLE, "Каталог недоступен"))
+                .when(programCatalog).require("NEW_PROGRAM");
+        mockMvc.perform(post("/api/v1/packages").with(authentication(user("SPECIALIST")))
+                        .contentType(MediaType.APPLICATION_JSON).content(body)).andExpect(status().isServiceUnavailable());
     }
 
     @Test

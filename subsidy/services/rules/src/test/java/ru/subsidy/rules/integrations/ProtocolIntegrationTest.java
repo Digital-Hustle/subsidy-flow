@@ -77,6 +77,34 @@ class ProtocolIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
+    void signatureEventsRecheckWithoutRegressingParsedStage_andOldProtocolKeepsItsSignature() {
+        UUID pkg = packageWithApplication()[0];
+        UUID file = dsl.select(Tables.PACKAGE_FILES.FILE_ID).from(Tables.PACKAGE_FILES)
+                .where(Tables.PACKAGE_FILES.PACKAGE_ID.eq(pkg)).fetchSingle().value1();
+        protocols.check(pkg);
+        ObjectNode received = objectMapper.createObjectNode().put("packageId", pkg.toString())
+                .put("fileId", file.toString()).put("version", 1);
+        received.putObject("electronicSignature").put("status", "PRESENT");
+        event("FileReceived", received);
+        var row = dsl.selectFrom(Tables.PACKAGE_FILES).where(Tables.PACKAGE_FILES.FILE_ID.eq(file)).fetchSingle();
+        assertThat(row.getStage()).isEqualTo("PARSED");
+        assertThat(row.getSignatureStatus()).isEqualTo("PRESENT");
+        assertThat(protocols.check(pkg)).isPresent();
+        var snapshots = dsl.select(Tables.PROTOCOLS.FACTS).from(Tables.PROTOCOLS)
+                .where(Tables.PROTOCOLS.PACKAGE_ID.eq(pkg)).orderBy(Tables.PROTOCOLS.VERSION).fetch();
+        assertThat(snapshots.get(0).value1().data()).contains("UNKNOWN");
+        assertThat(snapshots.get(1).value1().data()).contains("PRESENT");
+        received.put("version", 2);
+        received.putObject("electronicSignature").put("status", "ABSENT");
+        event("FileReplaced", received);
+        event("FileReceived", received.deepCopy().put("version", 1));
+        row = dsl.selectFrom(Tables.PACKAGE_FILES).where(Tables.PACKAGE_FILES.FILE_ID.eq(file)).fetchSingle();
+        assertThat(row.getVersion()).isEqualTo(2);
+        assertThat(row.getStage()).isEqualTo("RECEIVED");
+        assertThat(row.getSignatureStatus()).isEqualTo("ABSENT");
+    }
+
+    @Test
     void applicationChange_rechecksEvenWhenDocumentFieldsAreUnchanged() {
         UUID id = packageWithApplication()[0];
         assertThat(protocols.check(id)).isPresent();
@@ -186,6 +214,6 @@ class ProtocolIntegrationTest extends AbstractIntegrationTest {
         mockMvc.perform(put("/api/v1/programs/INNOVATION").with(authentication(user("SENIOR_SPECIALIST")))
                         .contentType(MediaType.APPLICATION_JSON).content(update.toString()))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.version").value(2));
+                .andExpect(jsonPath("$.version").value(current.path("version").asInt() + 1));
     }
 }

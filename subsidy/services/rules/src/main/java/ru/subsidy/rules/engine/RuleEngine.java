@@ -18,7 +18,7 @@ import ru.subsidy.rules.program.ProgramParams;
 public class RuleEngine {
 
     /** Версия набора правил (в протоколе). */
-    public static final String RULES_VERSION = "2026.10-3";
+    public static final String RULES_VERSION = "2026.10-4";
 
     private static final Logger LOG = LoggerFactory.getLogger(RuleEngine.class);
 

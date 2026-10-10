@@ -61,6 +61,12 @@ springdoc:
     path: /v3/api-docs
 
 app:
+  program-catalog:
+    url: ${RULES_URL:http://rules:8083}
+  service-account:
+    client-id: svc-package
+    client-secret: ${KC_SVC_PACKAGE_SECRET}
+    token-uri: ${OIDC_TOKEN_URI:http://keycloak:8080/auth/realms/subsidy/protocol/openid-connect/token}
   # ADR-023: токены сотрудников выпускает package; сервисы берут ключи по внутренней сети
   staff-token:
     issuer: ${STAFF_TOKEN_ISSUER:https://localhost/package}

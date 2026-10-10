@@ -181,7 +181,7 @@ public class UploadService {
                 .where(Tables.PACKAGES.ID.eq(packageId)).execute();
         outbox.append(Topics.PACKAGE_FILE_V1, "FileReceived", fileId.toString(), Map.of(
                 "fileId", fileId.toString(), "packageId", packageId.toString(), "version", version,
-                "mime", result.mime(), "pages", result.pages()));
+                "mime", result.mime(), "pages", result.pages(), "electronicSignature", result.electronicSignature()));
         return new AcceptedFile(fileId, RECEIVED, null);
     }
 

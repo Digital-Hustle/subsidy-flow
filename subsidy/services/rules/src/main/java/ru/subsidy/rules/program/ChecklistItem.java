@@ -9,7 +9,7 @@ import java.util.List;
  * @param title название для специалиста
  * @param kind REQUIRED, ONE_OF или CONDITIONAL
  * @param types подходящие виды документов
- * @param condition логический параметр программы, при котором пункт нужен (для CONDITIONAL)
+ * @param condition ключ boolean из application.conditions конкретного проекта (для CONDITIONAL)
  * @param conditionText условие по-русски
  * @param single нужен ровно один документ (иначе дубликат — предупреждение)
  */
