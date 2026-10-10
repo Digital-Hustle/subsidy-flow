@@ -42,11 +42,11 @@ public class PageQualityAssessor {
      * @return код причины (API.md §Причины) или null
      */
     public String unreadableReason(List<PageText> pages) {
-        List<PageText> scanned = scannedPages(pages);
-        if (scanned.isEmpty() || scanned.stream().anyMatch(PageText::hasText)) {
+        List<PageText> scans = scanPages(pages);
+        if (scans.isEmpty() || scans.stream().anyMatch(PageText::hasText)) {
             return null;
         }
-        return cause(scanned);
+        return cause(scans);
     }
 
     /**
@@ -56,7 +56,7 @@ public class PageQualityAssessor {
      * @return true — нужна ручная проверка
      */
     public boolean partial(List<PageText> pages) {
-        return scannedPages(pages).stream().anyMatch(PageQualityAssessor::isPartialPage);
+        return scanPages(pages).stream().anyMatch(PageQualityAssessor::isPartialPage);
     }
 
     private static boolean isPartialPage(PageText page) {
@@ -71,15 +71,15 @@ public class PageQualityAssessor {
         return lowConfidence || Boolean.TRUE.equals(quality.cutOff());
     }
 
-    private static List<PageText> scannedPages(List<PageText> pages) {
+    private static List<PageText> scanPages(List<PageText> pages) {
         return pages.stream()
                 .filter(page -> PageText.OCR.equals(page.source()) || PageText.OCR_WEAK.equals(page.source())
                         || PageText.NONE.equals(page.source()))
                 .toList();
     }
 
-    private static String cause(List<PageText> scanned) {
-        List<PageQuality> metrics = scanned.stream().map(PageText::quality).filter(Objects::nonNull).toList();
+    private static String cause(List<PageText> scans) {
+        List<PageQuality> metrics = scans.stream().map(PageText::quality).filter(Objects::nonNull).toList();
         String code = TEXT_NOT_FOUND;
         if (metrics.stream().anyMatch(metric -> metric.brightness() != null && metric.brightness() < BRIGHTNESS_MIN)) {
             code = IMAGE_TOO_DARK;
