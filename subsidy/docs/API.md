@@ -148,3 +148,18 @@
 - Приём и замена: разрешён только PDF по байтам, независимо от имени и Content-Type. Изображения/Office/ZIP → `FILE_TYPE_UNSUPPORTED`, hint: сохраните в PDF.
 - Текущая версия файла содержит `electronicSignature:{status,present,reason,cryptographicallyVerified}`: PRESENT/ABSENT/UNKNOWN, present=true/false/null. Проверяется структура PDF, а не криптографическая действительность; cryptographicallyVerified всегда false. Для старых версий UNKNOWN/NOT_INSPECTED.
 - Изменение заявки публикует `PackageApplicationChanged` через outbox; rules хранит новую ревизию и запускает перепроверку. `PackageChecked.applicationRevision` не позволяет старой проверке подтвердить новую заявку.
+# Контракт Backend 3 (B3-1…B3-6)
+
+Заявка дополняется необязательным `conditions`: объект `код условия → boolean`, относящийся только к этому проекту.
+Отсутствующий ключ означает неизвестную применимость, `false` — документ не требуется, `true` — применяется;
+отсутствие применимого условного документа даёт `WARNING`, а обязательного — `FAILED`.
+
+Сверки возвращают `expected` (значение сохранённой заявки), `actual` (значения документов) и `evidence` даже при совпадении.
+Признак встроенной ЭП передаётся в `FileReceived/FileReplaced.electronicSignature`, сохраняется в фактах и протоколе:
+`PRESENT`, `ABSENT`, `UNKNOWN`, `present`, `reason`, `cryptographicallyVerified=false`.
+Признак относится к PDF целиком, а не к отдельной странице или подписи конкретного документа. Требование наличия
+задаётся декларативной операцией `SIGNATURE_PRESENCE` для видов документов; без такого правила отсутствие не нарушает обязательность.
+
+`GET /internal/rules/programs/{code}`: текущие `code/version`, только `SVC_PACKAGE`; неизвестная программа —
+`PROGRAM_NOT_FOUND`. Package проверяет код через этот API вне транзакции записи; недоступность rules — `DEPENDENCY_UNAVAILABLE`.
+
