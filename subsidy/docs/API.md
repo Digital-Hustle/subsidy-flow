@@ -122,7 +122,7 @@
 | SESSION_EXPIRED | 401 | Сессия истекла | Войдите снова |
 | STAFF_LAST_SENIOR | 409 | Это последний старший специалист | Назначьте другого старшего, потом меняйте роль |
 | MAIL_UNAVAILABLE | 503 | Не удалось отправить письмо | Повторите позже или обратитесь к администратору стенда |
-| PAYLOAD_TOO_LARGE | 413 | Запрос больше {max} | Загрузка ≤ `GATEWAY_UPLOAD_MAX_MB` (512), прочие запросы ≤ `GATEWAY_BODY_MAX_KB` (1024); лимит на файл — `FILE_TOO_LARGE` в package |
+| PAYLOAD_TOO_LARGE | 413 | Запрос больше {max} | Загрузка ≤ `GATEWAY_UPLOAD_MAX_MB` (4096), прочие запросы ≤ `GATEWAY_BODY_MAX_KB` (1024); лимит на файл — `FILE_TOO_LARGE` в package |
 
 ## Причины непригодности и замечания (в результате, не HTTP)
 | reasonCode | Текст |

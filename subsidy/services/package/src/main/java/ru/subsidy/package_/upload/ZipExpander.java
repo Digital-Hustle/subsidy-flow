@@ -40,7 +40,7 @@ public class ZipExpander {
      * @param maxUnpackedMb ZIP_MAX_UNPACKED_MB
      * @param maxEntries ZIP_MAX_ENTRIES
      */
-    public ZipExpander(@Value("${ZIP_MAX_UNPACKED_MB:300}") long maxUnpackedMb,
+    public ZipExpander(@Value("${ZIP_MAX_UNPACKED_MB:4096}") long maxUnpackedMb,
                        @Value("${ZIP_MAX_ENTRIES:100}") int maxEntries) {
         this.maxUnpackedMb = maxUnpackedMb;
         this.maxUnpackedBytes = maxUnpackedMb * BYTES_IN_MB;

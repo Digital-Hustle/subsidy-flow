@@ -28,7 +28,7 @@ app:
   limits:
     uploads-per-minute: ${RATE_UPLOADS_PER_MINUTE:30}
     questions-per-minute: ${RATE_QUESTIONS_PER_MINUTE:20}
-    upload-max-mb: ${GATEWAY_UPLOAD_MAX_MB:512}
+    upload-max-mb: ${GATEWAY_UPLOAD_MAX_MB:4096}
     body-max-kb: ${GATEWAY_BODY_MAX_KB:1024}
     logins-per-minute: ${RATE_LOGINS_PER_MINUTE:20}
   staff-token:

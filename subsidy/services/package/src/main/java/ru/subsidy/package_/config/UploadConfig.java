@@ -22,7 +22,7 @@ public class UploadConfig {
      * @return лимиты
      */
     @Bean
-    public UploadLimits uploadLimits(@Value("${UPLOAD_MAX_MB:30}") long maxMb,
+    public UploadLimits uploadLimits(@Value("${UPLOAD_MAX_MB:1024}") long maxMb,
                                      @Value("${UPLOAD_MAX_PAGES:60}") int maxPages) {
         return new UploadLimits(maxMb * MEGABYTE, maxPages);
     }

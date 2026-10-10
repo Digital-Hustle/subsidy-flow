@@ -11,5 +11,5 @@ export const env = {
   apiBase: base,
   /** API на другом хосте: cookie сессии нужно слать явно. */
   crossOrigin: base !== "" && !base.startsWith(location.origin),
-  uploadMaxMb: Number(import.meta.env.VITE_UPLOAD_MAX_MB ?? 50),
+  uploadMaxMb: Number(import.meta.env.VITE_UPLOAD_MAX_MB ?? 1024),
 } as const;

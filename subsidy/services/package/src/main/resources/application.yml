@@ -3,8 +3,8 @@ spring:
     name: package
   servlet:
     multipart:
-      max-file-size: 64MB
-      max-request-size: 512MB
+      max-file-size: -1
+      max-request-size: -1
   threads:
     virtual:
       enabled: true
