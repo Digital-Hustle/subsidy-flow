@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router";
-import { keepPreviousData, useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "motion/react";
 import { AlertTriangle, ChevronRight, Inbox, Loader2, Search, UserRound } from "lucide-react";
 import { AppStatusBadge, dateTimeRu, reviewApi, reviewKeys, statusView, waitingRu, type QueueFilter } from "@/entities/application";
 import { TakeNextButton, useTakeNext } from "@/features/take-next";
 import { AnimatedNumber, Avatar, Button, Card, CardHeader, CardTitle, EmptyState, Input, LoadMore, PageHeader, RowsSkeleton, Segmented, Select, Status } from "@/shared/ui";
-import { errorText, useEventStream } from "@/shared/api";
+import { errorText } from "@/shared/api";
 import { routes } from "@/shared/const/router";
 import { cn } from "@/shared/lib";
 import { fadeUp, spring, stagger } from "@/shared/config/motion";
@@ -62,7 +62,6 @@ const QueueAside = ({ status, onStatus }: { status: string; onStatus: (v: string
 /** Очередь заявок — фильтры в URL, курсоры, «взять следующую», обновление без перезагрузки. */
 export const QueuePage = () => {
   const [sp, setSp] = useSearchParams();
-  const qc = useQueryClient();
   const next = useTakeNext();
   const text0 = sp.get("q") ?? "";
   const inn = /^\d{10}(\d{2})?$/.test(text0) ? text0 : "";
@@ -76,8 +75,8 @@ export const QueuePage = () => {
     initialPageParam: null as string | null,
     getNextPageParam: (last) => last.page?.next ?? null,
     placeholderData: keepPreviousData, // смена фильтра — без мигания скелетоном, строки перестраиваются
+    refetchInterval: 15_000, // у package поток событий только по пакету (/stream?packageId=) — очередь опрашиваем
   });
-  useEventStream("package", "/stream/ticket", "/stream", ["queue.changed", "package.checked", "package.changed", "file.stage"], () => { void qc.invalidateQueries({ queryKey: reviewKeys.queueAll }); });
   useEffect(() => {
     const on = (e: KeyboardEvent) => { if (e.key === "n" && !(e.target instanceof HTMLInputElement) && !next.isPending) next.mutate(); };
     addEventListener("keydown", on);
