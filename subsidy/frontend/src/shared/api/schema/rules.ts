@@ -68,6 +68,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/internal/rules/programs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["programs_1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/internal/rules/programs/{code}": {
         parameters: {
             query?: never;
@@ -318,6 +334,9 @@ export interface components {
             removed?: number;
             status?: string;
         };
+        ItemsProgramRs: {
+            items?: components["schemas"]["ProgramRs"][];
+        };
         ProgramLookupRs: {
             code?: string;
             /** Format: int32 */
@@ -423,9 +442,6 @@ export interface components {
             /** Format: int32 */
             packages?: number;
             method?: string;
-        };
-        ItemsProgramRs: {
-            items?: components["schemas"]["ProgramRs"][];
         };
         PingRs: {
             service?: string;
@@ -717,6 +733,44 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["RebuildRs"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Payload Too Large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    programs_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ItemsProgramRs"];
                 };
             };
             /** @description Bad Request */

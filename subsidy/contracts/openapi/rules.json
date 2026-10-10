@@ -297,6 +297,44 @@
         }
       }
     },
+    "/internal/rules/programs" : {
+      "get" : {
+        "tags" : [ "internal-programs-controller-impl" ],
+        "operationId" : "programs_1",
+        "responses" : {
+          "400" : {
+            "description" : "Bad Request",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "413" : {
+            "description" : "Payload Too Large",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ItemsProgramRs"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/internal/rules/programs/{code}" : {
       "get" : {
         "tags" : [ "internal-programs-controller-impl" ],
@@ -1031,6 +1069,17 @@
           }
         }
       },
+      "ItemsProgramRs" : {
+        "type" : "object",
+        "properties" : {
+          "items" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/ProgramRs"
+            }
+          }
+        }
+      },
       "ProgramLookupRs" : {
         "type" : "object",
         "properties" : {
@@ -1302,17 +1351,6 @@
           },
           "method" : {
             "type" : "string"
-          }
-        }
-      },
-      "ItemsProgramRs" : {
-        "type" : "object",
-        "properties" : {
-          "items" : {
-            "type" : "array",
-            "items" : {
-              "$ref" : "#/components/schemas/ProgramRs"
-            }
           }
         }
       },
