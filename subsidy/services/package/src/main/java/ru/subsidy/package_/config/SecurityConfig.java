@@ -54,6 +54,8 @@ public class SecurityConfig {
                                 "/api/v1/auth/logout").permitAll()
                         .requestMatchers("/internal/**").hasAuthority(SVC_DOCPROC)
                         .requestMatchers("/api/v1/stream").permitAll()
+                        // кабинет заявителя: доступ по ключу заявки проверяет ApplicantAccess
+                        .requestMatchers("/api/v1/applicant/**").permitAll()
                         .anyRequest().authenticated())
                 .exceptionHandling(errors -> errors.authenticationEntryPoint(ProblemSecurity.entryPoint())
                         .accessDeniedHandler(ProblemSecurity.accessDenied()))

@@ -32,7 +32,7 @@ const ProgramDetails = ({ p }: { p: Program }) => {
   const [history, setHistory] = useState(false);
   const rules = p.params?.rules ?? [];
   return (
-    <CardContent className="flex flex-col gap-4">
+    <CardContent className="flex flex-col gap-4 border-t border-border">
       {p.params?.description && <p className="whitespace-pre-line text-sm">{p.params.description}</p>}
       <div className="flex flex-col gap-1.5">
         <h3 className="text-xs font-medium uppercase text-muted-foreground">Документы</h3>
@@ -80,12 +80,12 @@ export const ProgramsPage = () => {
         <motion.div variants={stagger(0.05)} initial="hidden" animate="show" className="flex flex-col gap-3">
           {programs.map((p) => (
             <motion.div key={p.code} variants={fadeUp} layout><Card className="overflow-hidden">
-              <CardHeader className="flex flex-row flex-wrap items-center gap-2">
-                <button type="button" className="group flex min-w-0 flex-1 items-start gap-3 rounded-md text-left outline-none focus-visible:ring-2 focus-visible:ring-ring" onClick={() => setOpen(open === p.code ? null : p.code)} aria-expanded={open === p.code}>
+              <CardHeader className="flex flex-row flex-wrap items-center gap-3 pb-4 sm:pb-5">
+                <button type="button" className="group flex min-w-0 flex-1 items-center gap-3 rounded-md text-left outline-none focus-visible:ring-2 focus-visible:ring-ring" onClick={() => setOpen(open === p.code ? null : p.code)} aria-expanded={open === p.code}>
                   <span className="grid size-10 shrink-0 place-items-center rounded-md bg-muted text-muted-foreground transition-colors duration-fast group-hover:text-foreground"><ScrollText className="size-5" /></span>
-                  <span className="min-w-0 flex-1">
+                  <span className="flex min-w-0 flex-1 flex-col gap-0.5">
                     <CardTitle className="flex items-center gap-1">{p.name}<ChevronDown className={cn("size-4 shrink-0 text-subtle-foreground transition-transform duration-base", open === p.code && "rotate-180")} /></CardTitle>
-                    <p className="text-xs text-muted-foreground">{p.code} · версия {p.version} · документов {p.checklist?.length ?? 0}{p.updatedBy ? ` · изменил ${p.updatedBy}` : ""}</p>
+                    <p className="text-xs text-muted-foreground">{p.code} · версия {p.version} · документов {p.checklist?.length ?? 0}{p.updatedBy && !p.updatedBy.startsWith("migration") ? ` · изменил ${p.updatedBy}` : ""}</p>
                     {p.params?.deadline && <p className="flex items-center gap-1 text-xs text-muted-foreground"><CalendarClock className="size-3.5" />приём до {dateRuFull(p.params.deadline)}</p>}
                   </span>
                 </button>

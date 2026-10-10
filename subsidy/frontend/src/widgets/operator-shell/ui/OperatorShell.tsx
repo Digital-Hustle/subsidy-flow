@@ -33,7 +33,7 @@ export const OperatorShell = () => {
         <NavTrack items={items.map(({ to, label, end }) => ({ to, label, end }))} className="ml-auto hidden md:block xl:ml-6" />
         <div className="ml-auto flex shrink-0 items-center gap-1.5">
           {s.demoStand && <Status tone="warning" className="hidden sm:inline-flex"><FlaskConical className="size-3.5" />демо-стенд</Status>}
-          <ModelStatusBadge className="hidden lg:inline-flex" />
+          <ModelStatusBadge className="hidden xl:inline-flex" />
           <PreferencesButton className="hidden sm:flex" />
           <Button variant="quiet" className="h-12 rounded-md" onClick={() => setAccount(true)} aria-label={`Пользователь: ${s.name}`}><Avatar name={s.name} className="size-7" /><span className="hidden xl:inline">{roleLabel(s.role)}</span></Button>
         </div>

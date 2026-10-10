@@ -10,6 +10,8 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import ru.subsidy.common.exception.DomainException;
 import ru.subsidy.common.exception.ErrorCode;
 import ru.subsidy.common.exception.ProblemDetailFactory;
+import ru.subsidy.package_.applicant.DocumentsMissingException;
+import ru.subsidy.package_.applicant.UploadRejectedException;
 
 /**
  * Доменные ошибки → ProblemDetail с кодом из docs/API.md.
@@ -35,7 +37,12 @@ public class ApiExceptionHandler {
             Map.entry(ErrorCode.CONFLICT, HttpStatus.CONFLICT),
             Map.entry(ErrorCode.PACKAGE_LOCKED, HttpStatus.CONFLICT),
             Map.entry(ErrorCode.PACKAGE_DECIDED, HttpStatus.CONFLICT),
-            Map.entry(ErrorCode.FORBIDDEN, HttpStatus.FORBIDDEN));
+            Map.entry(ErrorCode.FORBIDDEN, HttpStatus.FORBIDDEN),
+            Map.entry(ErrorCode.APPLICATION_NOT_FOUND, HttpStatus.NOT_FOUND),
+            Map.entry(ErrorCode.DOCUMENT_NOT_FOUND, HttpStatus.NOT_FOUND),
+            Map.entry(ErrorCode.CONSENT_REQUIRED, HttpStatus.BAD_REQUEST),
+            Map.entry(ErrorCode.PROGRAM_UNKNOWN, HttpStatus.BAD_REQUEST),
+            Map.entry(ErrorCode.RATE_LIMITED, HttpStatus.TOO_MANY_REQUESTS));
 
     /**
      * Доменное исключение.
@@ -47,5 +54,34 @@ public class ApiExceptionHandler {
     public ProblemDetail domain(DomainException exception) {
         HttpStatus status = STATUSES.getOrDefault(exception.code(), HttpStatus.UNPROCESSABLE_ENTITY);
         return ProblemDetailFactory.of(exception, status.value());
+    }
+
+    /**
+     * Не хватает документов или анкеты для отправки.
+     *
+     * @param exception исключение
+     * @return 422 с missing и missingFields
+     */
+    @ExceptionHandler(DocumentsMissingException.class)
+    public ProblemDetail missing(DocumentsMissingException exception) {
+        ProblemDetail problem = ProblemDetailFactory.of(exception, HttpStatus.UNPROCESSABLE_ENTITY.value());
+        problem.setProperty("missing", exception.missing());
+        problem.setProperty("missingFields", exception.missingFields());
+        return problem;
+    }
+
+    /**
+     * Файл заявителя не принят.
+     *
+     * @param exception исключение
+     * @return 422 с кодом отказа и подсказкой
+     */
+    @ExceptionHandler(UploadRejectedException.class)
+    public ProblemDetail rejected(UploadRejectedException exception) {
+        ProblemDetail problem = ProblemDetailFactory.of(exception, HttpStatus.UNPROCESSABLE_ENTITY.value());
+        problem.setTitle(exception.reason());
+        problem.setProperty("code", exception.reason());
+        problem.setProperty("hint", exception.hint());
+        return problem;
     }
 }

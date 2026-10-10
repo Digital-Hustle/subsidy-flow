@@ -1,6 +1,8 @@
 package ru.subsidy.package_.pkg;
 
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
@@ -22,6 +24,8 @@ import ru.subsidy.common.security.ServiceTokenProvider;
 public class ProgramCatalogClient {
 
     private static final Duration TIMEOUT = Duration.ofSeconds(5);
+    private static final String BEARER = "Bearer ";
+    private static final String ITEMS = "items";
 
     private final RestClient http;
     private final ObjectProvider<ServiceTokenProvider> tokens;
@@ -54,12 +58,37 @@ public class ProgramCatalogClient {
         }
         try {
             JsonNode body = http.get().uri("/internal/rules/programs/{code}", code)
-                    .header(HttpHeaders.AUTHORIZATION, "Bearer " + provider.token()).retrieve().body(JsonNode.class);
+                    .header(HttpHeaders.AUTHORIZATION, BEARER + provider.token()).retrieve().body(JsonNode.class);
             if (body == null || !code.equals(body.path("code").asText()) || body.path("version").asInt() < 1) {
                 throw unavailable();
             }
         } catch (HttpClientErrorException.NotFound missing) {
             throw new DomainException(ErrorCode.PROGRAM_NOT_FOUND, "Программа не найдена: " + code);
+        } catch (RestClientException | IllegalStateException failure) {
+            throw unavailable();
+        }
+    }
+
+    /**
+     * Все программы (текущие версии) с чек-листом, параметрами и признаком {@code accepting}.
+     *
+     * @return программы из rules
+     * @throws DomainException DEPENDENCY_UNAVAILABLE
+     */
+    public List<JsonNode> all() {
+        ServiceTokenProvider provider = tokens.getIfAvailable();
+        if (provider == null) {
+            throw unavailable();
+        }
+        try {
+            JsonNode body = http.get().uri("/internal/rules/programs")
+                    .header(HttpHeaders.AUTHORIZATION, BEARER + provider.token()).retrieve().body(JsonNode.class);
+            if (body == null || !body.path(ITEMS).isArray()) {
+                throw unavailable();
+            }
+            List<JsonNode> items = new ArrayList<>();
+            body.path(ITEMS).forEach(items::add);
+            return items;
         } catch (RestClientException | IllegalStateException failure) {
             throw unavailable();
         }

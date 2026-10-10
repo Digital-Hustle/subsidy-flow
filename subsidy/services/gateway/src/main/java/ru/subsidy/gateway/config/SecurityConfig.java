@@ -54,6 +54,8 @@ public class SecurityConfig {
                         // ADR-023: вход сотрудника по коду из письма — до токена
                         .pathMatchers("/package/api/v1/auth/mode", "/package/api/v1/auth/code", "/package/api/v1/auth/verify",
                                 "/package/api/v1/auth/refresh", "/package/api/v1/auth/logout").permitAll()
+                        // кабинет заявителя: доступ по ключу заявки (Authorization: Applicant), проверяет package
+                        .pathMatchers("/package/api/v1/applicant/**").permitAll()
                         .pathMatchers("/package/**", "/docproc/**", "/rules/**", "/assistant/**").authenticated()
                         .anyExchange().denyAll())
                 .oauth2ResourceServer(oauth -> oauth.jwt(jwt -> { }))
