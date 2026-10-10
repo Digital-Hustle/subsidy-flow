@@ -1,0 +1,675 @@
+[
+  {
+    "code": "APPLICATION",
+    "name": "Заявление (заявка) на предоставление субсидии",
+    "hints": "Заголовок «Заявление» или «Заявка на участие в отборе на предоставление субсидии», «прошу предоставить субсидию»; сведения о заявителе (наименование, ИНН, ОГРН/ОГРНИП), запрашиваемая сумма, бюджет проекта, подпись руководителя.",
+    "version": "4",
+    "kinds": {
+      "orgName": "text",
+      "inn": "inn",
+      "ogrn": "ogrn",
+      "projectName": "text",
+      "requestedAmount": "money",
+      "totalCost": "money",
+      "ownFunds": "money",
+      "date": "date",
+      "signerName": "text"
+    },
+    "schema": {
+      "type": "object",
+      "properties": {
+        "orgName": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Наименование организации или ФИО индивидуального предпринимателя — заявителя"
+        },
+        "inn": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "ИНН заявителя"
+        },
+        "ogrn": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "ОГРН или ОГРНИП заявителя"
+        },
+        "projectName": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Наименование проекта"
+        },
+        "requestedAmount": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Запрашиваемая сумма субсидии (итог «Запрашиваемая сумма»)"
+        },
+        "totalCost": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Общая стоимость (бюджет) проекта, если указана"
+        },
+        "ownFunds": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Сумма собственных средств / софинансирования, если указана"
+        },
+        "date": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Дата заявления или дата подписания"
+        },
+        "signerName": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "ФИО подписанта"
+        }
+      },
+      "required": [
+        "orgName",
+        "inn",
+        "ogrn",
+        "projectName",
+        "requestedAmount",
+        "totalCost",
+        "ownFunds",
+        "date",
+        "signerName"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "code": "PD_CONSENT",
+    "name": "Согласие на обработку персональных данных",
+    "hints": "Слова «Согласие на обработку персональных данных», ФИО субъекта, паспортные данные, перечень действий с данными, «152-ФЗ», подпись и дата.",
+    "version": "4",
+    "kinds": {
+      "fullName": "text",
+      "passport": "text",
+      "date": "date"
+    },
+    "schema": {
+      "type": "object",
+      "properties": {
+        "fullName": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "ФИО лица, дающего согласие"
+        },
+        "passport": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Серия и номер паспорта, кем и когда выдан"
+        },
+        "date": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Дата согласия"
+        }
+      },
+      "required": [
+        "fullName",
+        "passport",
+        "date"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "code": "CERTIFICATE",
+    "name": "Сертификат соответствия",
+    "hints": "Заголовок «Сертификат соответствия», регистрационный номер (например, ЕАЭС RU С-…), орган по сертификации, продукция, срок действия «с … по …».",
+    "version": "4",
+    "kinds": {
+      "number": "text",
+      "issuer": "text",
+      "orgName": "text",
+      "inn": "inn",
+      "issueDate": "date",
+      "validUntil": "date"
+    },
+    "schema": {
+      "type": "object",
+      "properties": {
+        "number": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Номер сертификата"
+        },
+        "issuer": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Орган по сертификации"
+        },
+        "orgName": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Заявитель / изготовитель"
+        },
+        "inn": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "ИНН заявителя, если указан"
+        },
+        "issueDate": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Дата выдачи (регистрации)"
+        },
+        "validUntil": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Срок действия — дата окончания"
+        }
+      },
+      "required": [
+        "number",
+        "issuer",
+        "orgName",
+        "inn",
+        "issueDate",
+        "validUntil"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "code": "PRESENTATION",
+    "name": "Презентация проекта",
+    "hints": "Слайды или страницы презентации: название проекта крупно, цели, задачи, описание, этапы, команда, бюджет, ожидаемые результаты.",
+    "version": "4",
+    "kinds": {
+      "projectName": "text",
+      "description": "text",
+      "orgName": "text",
+      "inn": "inn"
+    },
+    "schema": {
+      "type": "object",
+      "properties": {
+        "projectName": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Наименование проекта"
+        },
+        "description": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Краткое описание проекта (1–3 предложения из текста)"
+        },
+        "orgName": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Заявитель, если указан"
+        },
+        "inn": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "ИНН заявителя, если указан"
+        }
+      },
+      "required": [
+        "projectName",
+        "description",
+        "orgName",
+        "inn"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "code": "COST_JUSTIFICATION",
+    "name": "Обоснование затрат (обоснование размера затрат, смета проекта)",
+    "hints": "Заголовок «Обоснование размера затрат», «Обоснование затрат», «Смета»; таблица статей расходов (наименование, количество, стоимость), итоговая сумма; может быть разбивка на собственные средства и средства субсидии.",
+    "version": "4",
+    "kinds": {
+      "orgName": "text",
+      "inn": "inn",
+      "projectName": "text",
+      "totalCost": "money",
+      "ownFunds": "money",
+      "requestedAmount": "money",
+      "items": "items"
+    },
+    "schema": {
+      "type": "object",
+      "properties": {
+        "orgName": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Заявитель"
+        },
+        "inn": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "ИНН заявителя, если указан"
+        },
+        "projectName": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Наименование проекта"
+        },
+        "totalCost": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Общая сумма расходов (строка «Итого» / «Всего»)"
+        },
+        "ownFunds": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Собственные средства (софинансирование) — итог, если указан"
+        },
+        "requestedAmount": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Сумма субсидии / запрашиваемые средства — итог, если указан"
+        },
+        "items": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "description": "Статьи расходов: каждая строка таблицы",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "qty": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "price": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "amount": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "name",
+              "qty",
+              "price",
+              "amount"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "orgName",
+        "inn",
+        "projectName",
+        "totalCost",
+        "ownFunds",
+        "requestedAmount",
+        "items"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "code": "BANK_STATEMENT",
+    "name": "Выписка (справка) из банка",
+    "hints": "Банковская выписка по счёту или справка банка об остатке денежных средств: наименование банка, БИК, номер счёта, владелец счёта, остаток на дату, подпись сотрудника банка, печать.",
+    "version": "4",
+    "kinds": {
+      "orgName": "text",
+      "inn": "inn",
+      "bankName": "text",
+      "account": "account",
+      "bik": "bik",
+      "balance": "money",
+      "date": "date"
+    },
+    "schema": {
+      "type": "object",
+      "properties": {
+        "orgName": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Владелец счёта (организация или ИП)"
+        },
+        "inn": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "ИНН владельца счёта, если указан"
+        },
+        "bankName": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Наименование банка"
+        },
+        "account": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Номер расчётного счёта"
+        },
+        "bik": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "БИК банка"
+        },
+        "balance": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Остаток денежных средств на счёте"
+        },
+        "date": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Дата выписки / справки или дата, на которую указан остаток"
+        }
+      },
+      "required": [
+        "orgName",
+        "inn",
+        "bankName",
+        "account",
+        "bik",
+        "balance",
+        "date"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "code": "PROPERTY_DOC",
+    "name": "Документ на недвижимое имущество",
+    "hints": "Выписка из ЕГРН, свидетельство о праве собственности, договор аренды земельного участка или помещения: кадастровый номер вида 61:18:0600022:891, площадь, адрес (местоположение), назначение / вид разрешённого использования.",
+    "version": "4",
+    "kinds": {
+      "cadastralNumber": "text",
+      "area": "text",
+      "purpose": "text",
+      "address": "text",
+      "rightHolder": "text",
+      "date": "date"
+    },
+    "schema": {
+      "type": "object",
+      "properties": {
+        "cadastralNumber": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Кадастровый номер объекта (вида NN:NN:NNNNNN:N)"
+        },
+        "area": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Площадь с единицами"
+        },
+        "purpose": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Назначение / категория / вид разрешённого использования"
+        },
+        "address": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Адрес или местоположение"
+        },
+        "rightHolder": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Правообладатель или арендатор, если указан"
+        },
+        "date": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Дата документа (выписки)"
+        }
+      },
+      "required": [
+        "cadastralNumber",
+        "area",
+        "purpose",
+        "address",
+        "rightHolder",
+        "date"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "code": "GUARANTEE_LETTER",
+    "name": "Гарантийное письмо",
+    "hints": "Заголовок «Гарантийное письмо», «гарантирую(ем)», «обязуюсь», обязательства заявителя или гаранта (софинансирование, реализация проекта), подпись руководителя, дата.",
+    "version": "4",
+    "kinds": {
+      "guarantorName": "text",
+      "inn": "inn",
+      "amount": "money",
+      "date": "date",
+      "signerName": "text"
+    },
+    "schema": {
+      "type": "object",
+      "properties": {
+        "guarantorName": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Организация или ИП, дающие гарантию"
+        },
+        "inn": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "ИНН гаранта, если указан"
+        },
+        "amount": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Сумма гарантии / обязательства, если указана"
+        },
+        "date": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Дата письма"
+        },
+        "signerName": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "ФИО подписанта"
+        }
+      },
+      "required": [
+        "guarantorName",
+        "inn",
+        "amount",
+        "date",
+        "signerName"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "code": "GIMS_DECLARATION",
+    "name": "Декларация (свидетельство) ГИМС о пляже",
+    "hints": "Документы Государственной инспекции по маломерным судам (ГИМС МЧС): декларация безопасности пляжа, акт технического освидетельствования пляжа, разрешение на пользование пляжем, срок действия.",
+    "version": "4",
+    "kinds": {
+      "number": "text",
+      "orgName": "text",
+      "address": "text",
+      "issueDate": "date",
+      "validUntil": "date"
+    },
+    "schema": {
+      "type": "object",
+      "properties": {
+        "number": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Номер документа"
+        },
+        "orgName": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Пользователь пляжа"
+        },
+        "address": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Местоположение пляжа"
+        },
+        "issueDate": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Дата выдачи"
+        },
+        "validUntil": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Срок действия — дата окончания"
+        }
+      },
+      "required": [
+        "number",
+        "orgName",
+        "address",
+        "issueDate",
+        "validUntil"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "code": "OTHER",
+    "name": "Документ вне перечня",
+    "hints": "Любой документ, не относящийся к видам выше.",
+    "version": "1",
+    "kinds": {
+      "summary": "text"
+    },
+    "schema": {
+      "type": "object",
+      "properties": {
+        "summary": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "О чём документ, одной фразой"
+        }
+      },
+      "required": [
+        "summary"
+      ],
+      "additionalProperties": false
+    }
+  }
+]

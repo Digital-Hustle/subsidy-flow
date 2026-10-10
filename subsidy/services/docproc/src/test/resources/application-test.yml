@@ -1,0 +1,19 @@
+spring:
+  liquibase:
+    contexts: test
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ""
+          jwk-set-uri: http://localhost:0/jwks
+management:
+  tracing:
+    enabled: false
+app:
+  docproc:
+    workers-enabled: false
+  service-account:
+    client-secret: test-secret
+  llm:
+    api-key: ""
