@@ -124,7 +124,7 @@ let browser,page;
  await page.goto(`${base}/operator`,{waitUntil:'domcontentloaded'});await page.getByRole('button',{name:'Новая заявка',exact:true}).click();
  const create=page.getByRole('dialog',{name:'Новая заявка'});await create.waitFor();
  await create.getByLabel('ИНН организации',{exact:true}).fill('1234567890');
- await create.getByLabel('Программа субсидии',{exact:true}).click();await page.getByRole('option',{name:'Обустройство пляжа',exact:true}).click();
+ await create.getByLabel('Программа субсидии',{exact:true}).focus();await page.keyboard.press('ArrowDown');await page.keyboard.press('End');await page.keyboard.press('ArrowUp');await page.keyboard.press('Enter');
  await create.getByLabel('Кадастровый номер',{exact:true}).fill('61:18:1234567:45');await create.getByLabel('Правообладатель',{exact:true}).fill('Тестовый правообладатель');
  await create.getByLabel('Программа субсидии',{exact:true}).click();await page.getByRole('option',{name:'Инновационный проект',exact:true}).click();assert.equal(await create.getByLabel('Кадастровый номер',{exact:true}).count(),0);
  await create.getByLabel('Программа субсидии',{exact:true}).click();await page.getByRole('option',{name:'Модернизация производства',exact:true}).click();assert.equal(await create.getByLabel('Кадастровый номер',{exact:true}).inputValue(),'61:18:1234567:45');

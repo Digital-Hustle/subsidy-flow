@@ -8,7 +8,6 @@ import { can, useSession } from "@/entities/session";
 import { CreateApplicationButton } from "@/features/manage-application";
 import { TakeNextButton, useTakeNext } from "@/features/take-next";
 import { useProgramName } from "@/entities/protocol";
-import { can, useSession } from "@/entities/session";
 import { AnimatedNumber, Avatar, Button, Card, CardHeader, CardTitle, EmptyState, Input, LoadMore, PageHeader, RowsSkeleton, Segmented, Select, Status } from "@/shared/ui";
 import { errorText } from "@/shared/api";
 import { routes } from "@/shared/const/router";
