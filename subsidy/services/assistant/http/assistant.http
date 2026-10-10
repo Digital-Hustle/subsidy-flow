@@ -1,0 +1,17 @@
+### assistant: health (management-порт, внутри сети)
+GET http://localhost:8084/actuator/health
+
+### Вопрос по пакету
+POST {{gateway}}/assistant/api/v1/packages/{{packageId}}/ask
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"question": "Почему не проходит сумма субсидии?"}
+
+### История диалога
+GET {{gateway}}/assistant/api/v1/packages/{{packageId}}/messages
+Authorization: Bearer {{token}}
+
+### Подсказки вопросов
+GET {{gateway}}/assistant/api/v1/packages/{{packageId}}/suggestions
+Authorization: Bearer {{token}}
