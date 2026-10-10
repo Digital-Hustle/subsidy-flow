@@ -158,7 +158,7 @@ public class ProgramService {
     }
 
     /**
-     * Новая версия существующей программы; пакеты программы, по которым нет решения, перепроверяются.
+     * Новая версия программы (неизвестный код — версия 1, как раньше); нерешённые пакеты программы перепроверяются.
      *
      * @param code код
      * @param name название (null — прежнее)
@@ -166,14 +166,15 @@ public class ProgramService {
      * @param checklist чек-лист
      * @param userId автор
      * @return новая версия
-     * @throws DomainException PROGRAM_NOT_FOUND, VALIDATION_ERROR
+     * @throws DomainException VALIDATION_ERROR
      */
     @Transactional
     public Program update(String code, String name, JsonNode params, JsonNode checklist, String userId) {
         validate(params, checklist);
-        Program previous = current(code);
-        insert(code, previous.version() + 1, name == null || name.isBlank() ? previous.name() : name,
-                previous.demo(), params, checklist, userId);
+        Optional<Program> previous = find(code);
+        String title = name == null || name.isBlank() ? previous.map(Program::name).orElse(code) : name;
+        insert(code, previous.map(Program::version).orElse(0) + 1, title, previous.map(Program::demo).orElse(false),
+                params, checklist, userId);
         dsl.select(Tables.PACKAGE_VIEW.PACKAGE_ID).from(Tables.PACKAGE_VIEW)
                 .where(Tables.PACKAGE_VIEW.PROGRAM_CODE.eq(code)).and(Tables.PACKAGE_VIEW.STATUS.ne("DECIDED"))
                 .fetch(Tables.PACKAGE_VIEW.PACKAGE_ID).forEach(recheck::request);

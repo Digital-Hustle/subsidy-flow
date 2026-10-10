@@ -24,4 +24,4 @@
 | RUL-18 | NFR-15 | Пересборка проекции из `docproc /internal/.../documents` при пропуске событий | B3 | done #76 |
 | RUL-19 | FR-30 | Программы и правила п. 4.3 по тексту кейса — данные программы, правка без кода | B3 | done |
 | B3-1…B3-6 | FR-35/39/41/43/44/45 | Сверки документов с заявкой, гарант, денежные проверки, условия проекта, подписи и динамические программы | B3 | review #9 |
-| RUL-20 | FR-35 | Создание программы `POST /programs` (уникальный код, 409 `PROGRAM_EXISTS`), история версий `GET /programs/{code}/versions`, `params.description/deadline` и `accepting`; `PUT` — только существующая программа | B3 | review |
+| RUL-20 | FR-35 | Создание программы `POST /programs` (уникальный код, 409 `PROGRAM_EXISTS`), история версий `GET /programs/{code}/versions`, `params.description/deadline` и `accepting` | B3 | review |

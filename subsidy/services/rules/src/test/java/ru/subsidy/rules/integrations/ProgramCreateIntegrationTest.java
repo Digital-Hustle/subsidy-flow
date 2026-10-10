@@ -101,7 +101,7 @@ class ProgramCreateIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void versions_newestFirst_andPutUnknownCodeIsRejected() throws Exception {
+    void versions_newestFirst_andUnknownCodeHasNoHistory() throws Exception {
         // given
         ObjectNode body = program(CODE, null);
         mockMvc.perform(post(URL).with(authentication(user(SENIOR)))
@@ -122,9 +122,6 @@ class ProgramCreateIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.items.length()").value(2))
                 .andExpect(jsonPath("$.items[0].version").value(2))
                 .andExpect(jsonPath("$.items[1].name").value("Тестовый грант"));
-        mockMvc.perform(put(URL + "/NO_SUCH").with(authentication(user(SENIOR)))
-                        .contentType(MediaType.APPLICATION_JSON).content(body.toString()))
-                .andExpect(jsonPath("$.code").value("PROGRAM_NOT_FOUND"));
         mockMvc.perform(get(URL + "/NO_SUCH/versions").with(authentication(user(SENIOR))))
                 .andExpect(jsonPath("$.code").value("PROGRAM_NOT_FOUND"));
     }

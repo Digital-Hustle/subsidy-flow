@@ -75,7 +75,7 @@
 - `GET /expiring?days=30` → документы, срок которых истекает (B-05)
 - `GET /programs`, `GET /programs/{code}` → `{code, version, name, demo, params, checklist, updatedBy, updatedAt, accepting}`; `GET /programs/{code}/versions` → `{items: [та же форма]}`, новые первыми (история версий). Читают SPECIALIST/SENIOR/AUDITOR; неизвестный код → 400 `PROGRAM_NOT_FOUND`
 - `POST /programs` `{code, name, params, checklist}` → 201 версия 1 — только `SENIOR_SPECIALIST` (FR-35). `code` — `[A-Z][A-Z0-9_]{1,31}`, уникален: занят → 409 `PROGRAM_EXISTS`; формат кода, чек-листа, правил или `params` неверен → 400 `VALIDATION_ERROR`
-- `PUT /programs/{code}` `{name?, params, checklist}` → новая версия **существующей** программы — только `SENIOR_SPECIALIST`; неизвестный код → 400 `PROGRAM_NOT_FOUND` (создание — только `POST`). Нерешённые пакеты программы перепроверяются
+- `PUT /programs/{code}` `{name?, params, checklist}` → новая версия программы — только `SENIOR_SPECIALIST`; для неизвестного кода, как и раньше, создаёт версию 1 без проверки уникальности (служебный путь). Интерфейс создаёт программы только через `POST`. Нерешённые пакеты программы перепроверяются
 - `params`: `description?` (строка ≤ 2000, видит заявитель), `deadline?` (`ГГГГ-ММ-ДД`, последний день приёма), `rules` (декларативные правила, ADR-027; суммы и доли — параметры правил `RANGE.min/max`, `RATIO_MIN.min`). `accepting` считает сервер: срока нет или сегодня ≤ `deadline`
 - Пункт `checklist`: `{item (уникален), title, kind: REQUIRED|ONE_OF|CONDITIONAL, types: [код вида из реестра docproc], condition?, conditionText?, single}`
 
