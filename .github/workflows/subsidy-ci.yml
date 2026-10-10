@@ -187,12 +187,8 @@ jobs:
       - run: ../scripts/gen-env.sh && docker compose up -d --build --wait --wait-timeout 600
         working-directory: subsidy/infra
       - run: subsidy/scripts/smoke.sh https://localhost
-      - if: hashFiles('subsidy/eval/run.py') != ''
-        uses: astral-sh/setup-uv@v6
-      - name: eval на синтетике через API стенда
-        if: hashFiles('subsidy/eval/run.py') != ''
-        working-directory: subsidy/eval
-        run: uv run python run.py --set synthetic --api https://localhost
+      # сквозной прогон синтетики — scripts/smoke.sh с EVAL_PASSWORD на стенде с моделью;
+      # в CI модели нет, а run.py без --dir падал на разборе аргументов
       - if: failure()
         run: docker compose logs --tail=200
         working-directory: subsidy/infra
