@@ -15,6 +15,13 @@ public enum ErrorCode {
     PROGRAM_NOT_FOUND,
     PROGRAM_EXISTS,
 
+    // Кабинет заявителя
+    APPLICATION_NOT_FOUND,
+    CONSENT_REQUIRED,
+    PROGRAM_UNKNOWN,
+    DOCUMENTS_MISSING,
+    RATE_LIMITED,
+
     // Файлы
     FILE_NOT_FOUND,
     FILE_TOO_LARGE,

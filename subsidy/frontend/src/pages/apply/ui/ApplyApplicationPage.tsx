@@ -60,7 +60,7 @@ export const ApplyApplicationPage = () => {
   const [editProfile, setEditProfile] = useState(false);
   const q = useQuery({ queryKey: applicantKeys.application(id), queryFn: () => applicantApi.get(id), enabled: !!key, retry: (n, e) => !(e instanceof ApiError && e.status < 500) && n < 2 });
   useEventStream("package", key ? `/applicant/applications/${id}/stream/ticket` : null, `/applicant/applications/${id}/stream`,
-    ["document.stage", "application.changed", "application.request", "application.decision"],
+    ["file.stage", "document.parsed", "package.checked", "document.stage", "application.changed", "application.request", "application.decision"],
     () => { void qc.invalidateQueries({ queryKey: applicantKeys.application(id) }); });
 
   const app = q.data;

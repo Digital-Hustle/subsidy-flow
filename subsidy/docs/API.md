@@ -45,7 +45,8 @@
 - `POST /applicant/applications/{id}/documents/{docId}/files?mode=add|replace` multipart `file` → 202 — добавить страницу / заменить файл.
 - `DELETE /applicant/applications/{id}/documents/{docId}` → 204 (до решения); `DELETE /applicant/applications/{id}` → 204 — удалить заявку и отозвать согласие (файлы всех версий, анкета, контакты).
 - `POST /applicant/applications/{id}/submit` → `{status: SUBMITTED, missing: []}`; не хватает обязательных документов или полей анкеты → 422 `DOCUMENTS_MISSING` `{missing, missingFields}`. После отправки пакет попадает в очередь специалиста.
-- `GET /applicant/stream/ticket` → `{ticket}`; `GET /applicant/applications/{id}/stream?ticket=` (SSE) — `document.stage` `{documentId, stage, reasonCode?}`, `application.request` `{requestId}`, `application.decision` `{decision}`; heartbeat `: ping` 15 с.
+- `GET /applicant/applications/{id}/stream/ticket` → `{ticket}`; `GET /applicant/applications/{id}/stream?ticket=` (SSE) — события пакета `file.stage`, `document.parsed`, `package.checked`; heartbeat `: ping` 15 с.
+- Реализация (package): черновик без организации до первой анкеты (ИНН из анкеты → `PackageCreated`); `documentId` = `fileId`; черновики (`DRAFT`) и удалённые заявки не попадают в очередь специалиста; программы и чек-лист — `GET /internal/rules/programs` (rules, SVC_PACKAGE); статус `NEEDS_FIX` — решение `RETURN` после последней отправки.
 - `GET /applicant/files/{fileId}/pages/{n}.png` → превью своей страницы (тот же ключ).
 
 Статусы заявки (`status` пакета): `DRAFT` (заявитель собирает) → `SUBMITTED` → `PROCESSING` → `CHECKED` → `NEEDS_FIX` (специалист запросил исправления, заявитель снова может загружать) → `DECIDED`. Пакет, созданный специалистом, начинается с `COLLECTING`, как раньше.

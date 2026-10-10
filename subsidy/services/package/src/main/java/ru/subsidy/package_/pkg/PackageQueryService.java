@@ -57,7 +57,9 @@ public class PackageQueryService {
     @Transactional(readOnly = true)
     public QueuePage list(QueueFilter filter, String cursor, Integer limit) {
         final int size = limit == null ? DEFAULT_LIMIT : Math.clamp(limit, 1, MAX_LIMIT);
-        Condition where = DSL.noCondition();
+        // черновики заявителей (ещё не отправлены или удалены) специалист не видит
+        Condition where = Tables.PACKAGES.ID.notIn(DSL.select(Tables.APPLICANTS.PACKAGE_ID).from(Tables.APPLICANTS)
+                .where(Tables.APPLICANTS.STATE.in("DRAFT", "DELETED")));
         if (filter.status() != null) {
             where = where.and(Tables.PACKAGES.STATUS.eq(filter.status()));
         }
