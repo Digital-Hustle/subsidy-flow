@@ -103,13 +103,6 @@ jobs:
           report_paths: subsidy/services/${{ matrix.svc.name }}/build/test-results/**/TEST-*.xml
           check_name: tests (${{ matrix.svc.name }})
           require_tests: false
-      - name: Сгенерированный OpenAPI для проверки контракта
-        if: always() && matrix.svc.kind == 'java' && matrix.svc.db
-        uses: actions/upload-artifact@v4
-        with:
-          name: openapi-${{ matrix.svc.name }}
-          path: subsidy/contracts/openapi/${{ matrix.svc.name }}.json
-          retention-days: 3
       # ---- Python (ocr) ----
       - if: matrix.svc.kind == 'python'
         uses: astral-sh/setup-uv@v6

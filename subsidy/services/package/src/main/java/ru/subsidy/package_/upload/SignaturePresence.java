@@ -10,6 +10,9 @@ package ru.subsidy.package_.upload;
  */
 public record SignaturePresence(String status, Boolean present, String reason, boolean cryptographicallyVerified) {
 
+    private static final String UNKNOWN = "UNKNOWN";
+    private static final String PRESENT = "PRESENT";
+
     /**
      * Читает сохранённое состояние версии файла.
      *
@@ -18,7 +21,7 @@ public record SignaturePresence(String status, Boolean present, String reason, b
      * @return результат
      */
     public static SignaturePresence stored(String status, String reason) {
-        return "UNKNOWN".equals(status) ? unknown(reason) : determined("PRESENT".equals(status));
+        return UNKNOWN.equals(status) ? unknown(reason) : determined(PRESENT.equals(status));
     }
 
     /**
@@ -28,7 +31,7 @@ public record SignaturePresence(String status, Boolean present, String reason, b
      * @return результат
      */
     public static SignaturePresence determined(boolean present) {
-        return new SignaturePresence(present ? "PRESENT" : "ABSENT", present, null, false);
+        return new SignaturePresence(present ? PRESENT : "ABSENT", present, null, false);
     }
 
     /**
@@ -38,6 +41,6 @@ public record SignaturePresence(String status, Boolean present, String reason, b
      * @return результат
      */
     public static SignaturePresence unknown(String reason) {
-        return new SignaturePresence("UNKNOWN", null, reason, false);
+        return new SignaturePresence(UNKNOWN, null, reason, false);
     }
 }

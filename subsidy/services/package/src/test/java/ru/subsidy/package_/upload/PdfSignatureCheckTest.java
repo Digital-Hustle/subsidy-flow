@@ -54,7 +54,7 @@ class PdfSignatureCheckTest {
     }
 
     @Test
-    void emptySignatureField_isNotASignature() throws IOException {
+    void emptySignatureField_isNotSigned() throws IOException {
         assertThat(inspector.inspect(withField(false)).electronicSignature().status()).isEqualTo("ABSENT");
     }
 

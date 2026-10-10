@@ -27,15 +27,20 @@ import jakarta.validation.constraints.Size;
  */
 public record ApplicationData(
         @NotBlank @Pattern(regexp = "[0-9]{10}") String orgInn,
-        @NotBlank @Size(max = 500) String orgName,
+        @NotBlank @Size(max = ApplicationData.NAME_MAX) String orgName,
         @NotBlank @Pattern(regexp = "[0-9]{13}") String ogrn,
         @NotNull @Valid Address address,
-        @NotBlank @Size(max = 4000) String project,
-        @NotNull @DecimalMin("0.01") @Digits(integer = 17, fraction = 2)
+        @NotBlank @Size(max = ApplicationData.PROJECT_MAX) String project,
+        @NotNull @DecimalMin("0.01") @Digits(integer = ApplicationData.MONEY_DIGITS, fraction = 2)
         @JsonFormat(shape = JsonFormat.Shape.STRING) BigDecimal requestedAmount,
         @NotNull LocalDate applicationDate,
         @NotNull @Valid Signatory signatory,
         @Valid Property property) {
+
+    private static final int NAME_MAX = 500;
+    private static final int TEXT_MAX = 2000;
+    private static final int PROJECT_MAX = 4000;
+    private static final int MONEY_DIGITS = 17;
 
     /**
      * Адрес заявки.
@@ -43,7 +48,7 @@ public record ApplicationData(
      * @param value адрес
      * @param purpose назначение: юридический, фактический или адрес проекта
      */
-    public record Address(@NotBlank @Size(max = 2000) String value,
+    public record Address(@NotBlank @Size(max = TEXT_MAX) String value,
                           @NotBlank @Pattern(regexp = "LEGAL|ACTUAL|PROJECT") String purpose) {
     }
 
@@ -54,9 +59,9 @@ public record ApplicationData(
      * @param position должность
      * @param authority основание полномочий
      */
-    public record Signatory(@NotBlank @Size(max = 500) String fullName,
-                            @NotBlank @Size(max = 500) String position,
-                            @NotBlank @Size(max = 2000) String authority) {
+    public record Signatory(@NotBlank @Size(max = NAME_MAX) String fullName,
+                            @NotBlank @Size(max = NAME_MAX) String position,
+                            @NotBlank @Size(max = TEXT_MAX) String authority) {
     }
 
     /**
@@ -67,7 +72,7 @@ public record ApplicationData(
      * @param rightType собственность, аренда или иное пользование
      */
     public record Property(@NotBlank @Pattern(regexp = "[0-9]{2}:[0-9]{2}:[0-9]{6,7}:[0-9]+") String cadastralNumber,
-                           @NotBlank @Size(max = 2000) String address,
+                           @NotBlank @Size(max = TEXT_MAX) String address,
                            @NotBlank @Pattern(regexp = "OWNERSHIP|LEASE|USE") String rightType) {
     }
 }

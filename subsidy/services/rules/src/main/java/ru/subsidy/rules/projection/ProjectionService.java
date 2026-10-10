@@ -56,6 +56,8 @@ public class ProjectionService {
     private static final String COLLECTING = "COLLECTING";
     private static final String RECEIVED = "RECEIVED";
     private static final String INN = "inn";
+    private static final String ORG_ID = "orgId";
+    private static final String APPLICATION_REVISION = "applicationRevision";
 
     private final DSLContext dsl;
     private final IdempotentConsumer inbox;
@@ -112,7 +114,7 @@ public class ProjectionService {
         OffsetDateTime now = OffsetDateTime.now(clock);
         dsl.insertInto(Tables.PACKAGE_VIEW)
                 .set(Tables.PACKAGE_VIEW.PACKAGE_ID, packageId)
-                .set(Tables.PACKAGE_VIEW.ORG_ID, optionalUuid(payload, "orgId"))
+                .set(Tables.PACKAGE_VIEW.ORG_ID, optionalUuid(payload, ORG_ID))
                 .set(Tables.PACKAGE_VIEW.INN, text(payload, INN))
                 .set(Tables.PACKAGE_VIEW.PROGRAM_CODE, payload.path(K_PROGRAM_CODE).asText())
                 .set(Tables.PACKAGE_VIEW.STATUS, COLLECTING)
@@ -138,9 +140,9 @@ public class ProjectionService {
 
     private void applicationChanged(JsonNode payload) {
         UUID packageId = uuid(payload, PACKAGE_ID);
-        int revision = payload.path("applicationRevision").asInt();
+        int revision = payload.path(APPLICATION_REVISION).asInt();
         int updated = dsl.update(Tables.PACKAGE_VIEW)
-                .set(Tables.PACKAGE_VIEW.ORG_ID, uuid(payload, "orgId"))
+                .set(Tables.PACKAGE_VIEW.ORG_ID, uuid(payload, ORG_ID))
                 .set(Tables.PACKAGE_VIEW.INN, text(payload, INN))
                 .set(Tables.PACKAGE_VIEW.APPLICATION, JSONB.valueOf(payload.path("application").toString()))
                 .set(Tables.PACKAGE_VIEW.APPLICATION_REVISION, revision)
@@ -149,7 +151,7 @@ public class ProjectionService {
                 .and(Tables.PACKAGE_VIEW.APPLICATION_REVISION.lt(revision)).execute();
         if (updated > 0) {
             history.append(text(payload, INN), text(payload, "changedBy"), "APPLICATION_CHANGED", packageId,
-                    Map.of("applicationRevision", revision));
+                    Map.of(APPLICATION_REVISION, revision));
             recheck.request(packageId);
         }
     }

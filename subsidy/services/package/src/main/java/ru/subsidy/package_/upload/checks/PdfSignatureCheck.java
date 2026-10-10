@@ -1,7 +1,5 @@
 package ru.subsidy.package_.upload.checks;
 
-import java.io.IOException;
-
 import org.apache.pdfbox.cos.COSName;
 import org.apache.pdfbox.cos.COSString;
 import org.apache.pdfbox.pdmodel.PDDocument;
@@ -15,6 +13,7 @@ import ru.subsidy.package_.upload.SignaturePresence;
 public final class PdfSignatureCheck {
 
     private static final int RANGE_PARTS = 4;
+    private static final int LAST_RANGE_PART = 3;
 
     private PdfSignatureCheck() {
     }
@@ -43,14 +42,15 @@ public final class PdfSignatureCheck {
             }
             return uncertain ? SignaturePresence.unknown("SIGNATURE_STRUCTURE_INCOMPLETE")
                     : SignaturePresence.determined(false);
-        } catch (IOException | RuntimeException unreadable) {
+        } catch (RuntimeException unreadable) {
             return SignaturePresence.unknown("SIGNATURE_INSPECTION_FAILED");
         }
     }
 
     private static boolean validRange(int[] range, int size) {
         return range != null && range.length == RANGE_PARTS && range[0] == 0 && range[1] > 0
-                && range[2] > range[1] && range[3] >= 0 && (long) range[2] + range[3] <= size;
+                && range[2] > range[1] && range[LAST_RANGE_PART] >= 0
+                && (long) range[2] + range[LAST_RANGE_PART] <= size;
     }
 
     private static boolean nonEmpty(byte[] contents) {

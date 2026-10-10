@@ -31,6 +31,32 @@
 - `GET /stream?packageId=&ticket=` (SSE, билет из `GET /stream/ticket`) — `file.stage`, `document.parsed`, `package.checked`; heartbeat `: ping` каждые 15 с
 - `POST /packages/{id}/decision` `{decision: APPROVE|REJECT|RETURN, comment}` → 200 `{packageId, status, decision, decidedBy, decidedAt}`; только `SENIOR_SPECIALIST`, только при наличии протокола (`PROTOCOL_NOT_FOUND` 422), комментарий обязателен для REJECT/RETURN (400), повтор → `PACKAGE_DECIDED` 409. RETURN возвращает пакет в `COLLECTING` (дозагрузка), APPROVE/REJECT → `DECIDED`; событие `PackageDecided`
 
+## Кабинет заявителя (`/package/api/v1/applicant`, без входа сотрудника)
+Контракт для фронта зоны `/apply` (тот же поток, что в кейсе «Документы»: анкета → чек-лист → загрузка по слотам → стадии в реальном времени → отправка → запросы специалиста). Заявка заявителя = пакет (`applicationId` = `packageId`).
+
+- **Доступ**: ключ заявки. `POST /applicant/applications` возвращает `{applicationId, accessKey, resumeCode, link}` **один раз**; дальше `Authorization: Applicant <accessKey>`. Ключ хранится только хэшем, фронт держит его во фрагменте `#k=` и в `sessionStorage`. Чужая заявка или неверный ключ → 404 `APPLICATION_NOT_FOUND` (не 403).
+- `GET /applicant/programs` → `{items: [{code, name, description, deadline?}]}` — только активные программы (из `rules`), без входа.
+- Анкета заявителя — **тот же объект `application`**, что у специалиста (раздел «Заявка и PDF»: `orgInn`, `orgName`, `ogrn`, `address`, `project`, `requestedAmount`, `applicationDate`, `signatory`, `property?`), с теми же проверками и историей ревизий.
+- `POST /applicant/applications` `{consentPd: true, programCode, contact: {email, phone?}}` → 201 `{applicationId, accessKey, resumeCode, link}` (`Idempotency-Key`); без согласия → 400 `CONSENT_REQUIRED`; неизвестная/закрытая программа → 400 `PROGRAM_UNKNOWN`; почта/телефон не по формату → 400 `VALIDATION_ERROR`.
+- `POST /applicant/resume` `{phoneOrEmail, resumeCode}` → 200 `{applicationId, accessKey, resumeCode, link}` (новый ключ, старый перестаёт работать); неверно → 404 `APPLICATION_NOT_FOUND`, 5 попыток → 429 `RATE_LIMITED`.
+- `GET /applicant/applications/{id}` → `{applicationId, status, programCode, programName, application, applicationRevision, requiredDocuments: [{type, title, hint, required, condition?}], documents: [{id, fileId, slotType, detectedType, detectedTypeName, fileName, pages, stage, reasonCode?, message?, hint?, electronicSignature?, updatedAt}], missing: [type], operatorRequests: [{id, type?, documentId?, reason, createdAt, resolvedAt?}], decision: {decision, comment, decidedAt}|null, submittedAt?, updatedAt}` — **без извлечённых полей и проверок** (их видит только специалист).
+- `PUT /applicant/applications/{id}/application` `{expectedRevision, application}` → `{applicationRevision, requiredDocuments}` — полная замена анкеты (как `PUT /packages/{id}/application`), до отправки и в `NEEDS_FIX`; чек-лист считает сервер по программе и анкете; неверный ИНН/ОГРН → 400 `VALIDATION_ERROR` с `field`; конфликт ревизии → 409. Черновик можно сохранять частично (`application` с `null`-полями), полнота проверяется на `submit`.
+- `POST /applicant/applications/{id}/documents?slotType=` multipart `file` (только PDF по байтам, как у специалиста) → **202** `{documentId, fileId, stage: RECEIVED, duplicateOf?, warnings: []}` (`Idempotency-Key`); коды отказа — таблица «Коды отказов приёма». `slotType` — подсказка, вид документа всё равно определяется по содержимому.
+- `POST /applicant/applications/{id}/documents/{docId}/files?mode=add|replace` multipart `file` → 202 — добавить страницу / заменить файл.
+- `DELETE /applicant/applications/{id}/documents/{docId}` → 204 (до решения); `DELETE /applicant/applications/{id}` → 204 — удалить заявку и отозвать согласие (файлы всех версий, анкета, контакты).
+- `POST /applicant/applications/{id}/submit` → `{status: SUBMITTED, missing: []}`; не хватает обязательных документов или полей анкеты → 422 `DOCUMENTS_MISSING` `{missing, missingFields}`. После отправки пакет попадает в очередь специалиста.
+- `GET /applicant/stream/ticket` → `{ticket}`; `GET /applicant/applications/{id}/stream?ticket=` (SSE) — `document.stage` `{documentId, stage, reasonCode?}`, `application.request` `{requestId}`, `application.decision` `{decision}`; heartbeat `: ping` 15 с.
+- `GET /applicant/files/{fileId}/pages/{n}.png` → превью своей страницы (тот же ключ).
+
+Статусы заявки (`status` пакета): `DRAFT` (заявитель собирает) → `SUBMITTED` → `PROCESSING` → `CHECKED` → `NEEDS_FIX` (специалист запросил исправления, заявитель снова может загружать) → `DECIDED`. Пакет, созданный специалистом, начинается с `COLLECTING`, как раньше.
+
+### Специалист: что добавляется к `package` для зоны `/operator`
+- `GET /packages?status=&q=&assignee=me|none|&sort=waiting|updated&cursor=&limit=` → в элементе очереди дополнительно `{applicantName, assignee, submittedAt, waitingSeconds, source: APPLICANT|SPECIALIST, documents, processing, attention, missing: [type]}`.
+- `POST /packages/next` → `{packageId}` или 204 — взять следующий неназначенный (старший в очереди); `POST /packages/{id}/assign?force=` → 204, занято другим → 409 `ALREADY_ASSIGNED` (`force=true` — только `SENIOR_SPECIALIST`).
+- `POST /packages/{id}/request` `{items: [{type?, documentId?, reason}]}` → 204 — запрос исправлений заявителю: статус `NEEDS_FIX`, письмо на контакт заявки, событие `application.request`.
+- `GET /packages/{id}/history` → `{items: [{id, action, actor, source, documentId?, details, createdAt}]}` — приём, разбор, правки, запросы, решение.
+- В карточке `GET /packages/{id}` дополнительно `{contact: {email, phone}, requests: [...], assignee, source, submittedAt}`.
+
 ## docproc (`/docproc/api/v1`)
 - `GET /documents/{id}/result` → `{type, typeConfidence, evidence, fields: [{name, value, raw, page, bbox, confidence, checks}], model, promptVersion, schemaVersion}`
 - `PUT /documents/{id}/type` `{type, reason}` → 202 (переизвлечение полей по новому типу, FR-29)

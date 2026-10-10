@@ -14,13 +14,6 @@ create table application_changes (
     changed_at timestamptz not null,
     primary key (package_id, revision)
 );
-create function reject_application_history_mutation() returns trigger language plpgsql as $$
-begin
-    raise exception 'application history is append-only';
-end;
-$$;
-create trigger application_history_append_only before update or delete on application_changes
-    for each row execute function reject_application_history_mutation();
 alter table file_versions add column signature_status text not null default 'UNKNOWN'
     check (signature_status in ('PRESENT', 'ABSENT', 'UNKNOWN'));
 alter table file_versions add column signature_reason text default 'NOT_INSPECTED';
@@ -30,4 +23,15 @@ alter table file_versions add constraint signature_result_consistent check (
 );
 
 
---rollback alter table file_versions drop constraint signature_result_consistent, drop column signature_reason, drop column signature_status; drop table application_changes; drop function reject_application_history_mutation(); alter table packages drop column requested_amount, drop column application_revision, drop column application;
+--rollback alter table file_versions drop constraint signature_result_consistent, drop column signature_reason, drop column signature_status; drop table application_changes; alter table packages drop column requested_amount, drop column application_revision, drop column application;
+
+--changeset codex:20261010103312-application-history-guard splitStatements:false
+create function reject_application_history_mutation() returns trigger language plpgsql as $$
+begin
+    raise exception 'application history is append-only';
+end;
+$$;
+create trigger application_history_append_only before update or delete on application_changes
+    for each row execute function reject_application_history_mutation();
+
+--rollback drop trigger application_history_append_only on application_changes; drop function reject_application_history_mutation();

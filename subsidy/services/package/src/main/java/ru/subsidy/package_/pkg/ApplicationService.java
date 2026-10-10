@@ -29,6 +29,7 @@ import ru.subsidy.package_.organization.OrganizationService;
 @Service
 public class ApplicationService {
 
+    private static final String PACKAGE_NOT_FOUND = "Пакет не найден";
     private final DSLContext dsl;
     private final ObjectMapper json;
     private final Clock clock;
@@ -63,7 +64,7 @@ public class ApplicationService {
     @Transactional(readOnly = true)
     public List<Change> history(UUID packageId) {
         if (!dsl.fetchExists(Tables.PACKAGES, Tables.PACKAGES.ID.eq(packageId))) {
-            throw new NotFoundException("Пакет не найден");
+            throw new NotFoundException(PACKAGE_NOT_FOUND);
         }
         return dsl.selectFrom(Tables.APPLICATION_CHANGES)
                 .where(Tables.APPLICATION_CHANGES.PACKAGE_ID.eq(packageId))
@@ -86,7 +87,7 @@ public class ApplicationService {
     @Transactional
     public Revision update(UUID packageId, int expectedRevision, ApplicationData application, String userId) {
         var row = dsl.selectFrom(Tables.PACKAGES).where(Tables.PACKAGES.ID.eq(packageId)).forUpdate()
-                .fetchOptional().orElseThrow(() -> new NotFoundException("Пакет не найден"));
+                .fetchOptional().orElseThrow(() -> new NotFoundException(PACKAGE_NOT_FOUND));
         if ("DECIDED".equals(row.getStatus())) {
             throw new DomainException(ErrorCode.PACKAGE_DECIDED, "По пакету уже принято решение");
         }
