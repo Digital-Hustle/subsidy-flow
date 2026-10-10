@@ -455,6 +455,12 @@
           },
           "schemaVersion" : {
             "type" : "string"
+          },
+          "marks" : {
+            "$ref" : "#/components/schemas/JsonNode"
+          },
+          "pageQuality" : {
+            "$ref" : "#/components/schemas/JsonNode"
           }
         }
       },

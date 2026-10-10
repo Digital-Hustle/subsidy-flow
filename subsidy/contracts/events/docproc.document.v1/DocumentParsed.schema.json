@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "urn:subsidy:events:docproc.document.v1:DocumentParsed",
   "title": "DocumentParsed",
-  "description": "docproc: документ разобран (вид, поля, проверки); новая версия результата — новое событие. Это схема payload; конверт — envelope.schema.json.",
+  "description": "docproc: документ разобран (вид, поля, проверки, признаки подписи/печати B2-2, качество страниц B2-3); новая версия результата — новое событие. Это схема payload; конверт — envelope.schema.json.",
   "type": "object",
   "required": [
     "fileId",
@@ -123,6 +123,119 @@
             }
           }
         }
+      }
+    },
+    "marks": {
+      "type": "object",
+      "required": [
+        "signature",
+        "stamp"
+      ],
+      "properties": {
+        "signature": {
+          "type": "object",
+          "required": [
+            "status",
+            "source"
+          ],
+          "properties": {
+            "status": {
+              "enum": [
+                "DETECTED",
+                "NOT_DETECTED",
+                "UNDETERMINED"
+              ]
+            },
+            "source": {
+              "enum": [
+                "TEXT",
+                "IMAGE",
+                "TEXT_AND_IMAGE"
+              ]
+            },
+            "confidence": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0,
+              "maximum": 1
+            }
+          },
+          "additionalProperties": false
+        },
+        "stamp": {
+          "type": "object",
+          "required": [
+            "status",
+            "source"
+          ],
+          "properties": {
+            "status": {
+              "enum": [
+                "DETECTED",
+                "NOT_DETECTED",
+                "UNDETERMINED"
+              ]
+            },
+            "source": {
+              "enum": [
+                "TEXT",
+                "IMAGE",
+                "TEXT_AND_IMAGE"
+              ]
+            },
+            "confidence": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0,
+              "maximum": 1
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "pageQuality": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "blur": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "brightness": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "glare": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "cutOff": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "meanConf": {
+            "type": [
+              "number",
+              "null"
+            ]
+          }
+        },
+        "additionalProperties": false
       }
     }
   },

@@ -169,6 +169,16 @@ class PipelineIntegrationTest extends AbstractIntegrationTest {
         List<String> types = dsl.select(Tables.OUTBOX.MESSAGE_KEY, Tables.OUTBOX.PAYLOAD).from(Tables.OUTBOX)
                 .where(Tables.OUTBOX.MESSAGE_KEY.eq(ids[0].toString())).fetch(row -> row.value2().data());
         assertThat(String.join("\n", types)).contains("DocumentsSegmented").contains("DocumentParsed");
+
+        mockMvc
+                .perform(get("/api/v1/documents/" + objectMapper.readTree(body).path("items").path(0)
+                        .path("documentId").asText() + "/result").with(authentication(user("SPECIALIST"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.marks.signature.status").value("DETECTED"))
+                .andExpect(jsonPath("$.marks.signature.source").value("TEXT"))
+                .andExpect(jsonPath("$.marks.stamp.status").value("UNDETERMINED"))
+                .andExpect(jsonPath("$.pageQuality").doesNotExist());
+        assertThat(String.join("\n", types)).contains("\"marks\"").contains("\"signature\"");
     }
 
     @Test
@@ -299,6 +309,7 @@ class PipelineIntegrationTest extends AbstractIntegrationTest {
                                 .put("requestedAmount", "1 500 000 руб. 00 коп.").put("date", "«1» марта 2026 г.");
                         root.putObject("confidence").put("inn", 0.95).put("requestedAmount", 0.95).put("date", 0.9);
                     }
+                    root.set("marks", marks(json));
                     return new LlmResult(root, "fake", "fake-model", 1, null, null, 1);
                 }
 
@@ -312,6 +323,15 @@ class PipelineIntegrationTest extends AbstractIntegrationTest {
         private static ObjectNode segment(ObjectMapper json, int first, int last, String type) {
             return json.createObjectNode().put("fromPage", first).put("toPage", last).put("type", type)
                     .put("confidence", 0.95).put("evidence", type);
+        }
+
+        private static ObjectNode marks(ObjectMapper json) {
+            ObjectNode marks = json.createObjectNode();
+            marks.putObject("signature").put("status", "DETECTED").put("confidence", 0.9)
+                    .put("basis", "росчерк под подписью");
+            marks.putObject("stamp").put("status", "UNDETERMINED").put("confidence", 0.0)
+                    .put("basis", "по тексту не определить");
+            return marks;
         }
     }
 }

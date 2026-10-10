@@ -26,3 +26,4 @@
 
 ## 5. Журнал изменений (дописывать в конец)
 - 2026-10-09 · miroslavrov · docs: документы модуля
+- 2026-10-10 · KIRI4444 · B2-1 (DP-17, PR #4): PROPERTY_DOC — addresses[] с назначением, rightHolder/tenant; GUARANTEE_LETTER — guarantor*/beneficiary* + inn для совместимости; схемы v5. B2-3 (DP-18, PR #10): PageQualityAssessor — UNREADABLE с причиной, PARTIAL_SCAN → NEEDS_REVIEW. B2-2/B2-4 (DP-19): extract.v2 + marks {signature, stamp}, parse_results.marks/page_quality, DocumentParsed.marks/pageQuality, API.md. Ручная смена типа сохраняет source=SPECIALIST/reason/by (старое поведение).

@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.UUID;
 
 import org.jooq.DSLContext;
+import org.jooq.JSONB;
 import org.jooq.Record;
 import org.jooq.impl.DSL;
 import org.springframework.stereotype.Service;
@@ -136,14 +137,10 @@ public class ResultService {
     }
 
     private DocumentResult toResult(Record rec) {
-        JsonNode fields = json.createArrayNode();
-        if (rec.get(Tables.PARSE_RESULTS.FIELDS) != null) {
-            try {
-                fields = json.readTree(rec.get(Tables.PARSE_RESULTS.FIELDS).data());
-            } catch (JsonProcessingException broken) {
-                throw new IllegalStateException("Поля не читаются", broken);
-            }
-        }
+        JsonNode fields = readJson(rec.get(Tables.PARSE_RESULTS.FIELDS), json.createArrayNode(), "Поля не читаются");
+        JsonNode marks = readJson(rec.get(Tables.PARSE_RESULTS.MARKS), null, "Признаки подписи/печати не читаются");
+        JsonNode pageQuality = readJson(rec.get(Tables.PARSE_RESULTS.PAGE_QUALITY), null,
+                "Качество страниц не читается");
         return new DocumentResult(rec.get(Tables.DOCUMENTS.ID), rec.get(Tables.DOCUMENTS.FILE_ID),
                 rec.get(Tables.DOCUMENTS.FILE_VERSION), rec.get(Tables.DOCUMENTS.FROM_PAGE),
                 rec.get(Tables.DOCUMENTS.TO_PAGE), rec.get(Tables.DOCUMENTS.STAGE),
@@ -151,7 +148,18 @@ public class ResultService {
                 rec.get(Tables.PARSE_RESULTS.TYPE_CONFIDENCE), rec.get(Tables.PARSE_RESULTS.EVIDENCE),
                 rec.get(Tables.PARSE_RESULTS.SOURCE), rec.get(Tables.PARSE_RESULTS.VERSION), fields,
                 rec.get(Tables.PARSE_RESULTS.MODEL), rec.get(Tables.PARSE_RESULTS.PROMPT_VERSION),
-                rec.get(Tables.PARSE_RESULTS.SCHEMA_VERSION));
+                rec.get(Tables.PARSE_RESULTS.SCHEMA_VERSION), marks, pageQuality);
+    }
+
+    private JsonNode readJson(JSONB raw, JsonNode fallback, String error) {
+        if (raw == null) {
+            return fallback;
+        }
+        try {
+            return json.readTree(raw.data());
+        } catch (JsonProcessingException broken) {
+            throw new IllegalStateException(error, broken);
+        }
     }
 
     /**
@@ -173,10 +181,13 @@ public class ResultService {
      * @param model модель
      * @param promptVersion версия промпта
      * @param schemaVersion версия схемы
+     * @param marks признаки подписи и печати (B2-2) или null
+     * @param pageQuality качество страниц документа (B2-3) или null
      */
     public record DocumentResult(UUID documentId, UUID fileId, int fileVersion, int fromPage, int toPage,
                                  String stage, String reasonCode, String type, BigDecimal typeConfidence,
                                  String evidence, String source, Integer resultVersion, JsonNode fields,
-                                 String model, String promptVersion, String schemaVersion) {
+                                 String model, String promptVersion, String schemaVersion, JsonNode marks,
+                                 JsonNode pageQuality) {
     }
 }
