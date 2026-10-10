@@ -41,3 +41,5 @@
 - 2026-10-10 · F1-1…4 · Перенесено на новый интерфейс main (#5): /operator, общая ApplicationFields в entities/application, manage-application (создание/редактирование), manage-documents (загрузка, оригинал, замена). Форматы по исходному кейсу PDF/DOC/DOCX/XLS/XLSX/JPG/JPEG/PNG. Проверки реквизитов и расчёты — серверные. Стороны beneficiary/guarantor/rightHolder/tenant; nullable признаки signaturePresent/stampPresent; ЭП из структуры file.electronicSignature. Кеш и запрос превью содержат версию, старый результат fileVersion не подмешивается. Бэкенд B1 пока ограничен PDF и не сохраняет totalCost/ownFunds/area/purpose/rightHolder: frontend показывает отказы и сверяет сохранённые поля вместо ложного успеха.
 
 - 2026-10-10 · F1 · Сохранены исправления main #6–8 (опрос очереди, названия программ, отсутствие пустого списка). 14 unit-тестов и браузерный smoke с синтетическим API: роли, ошибки, DnD, SSE, версии и восстановление превью. Unit-тесты запускаются командой npm test.
+
+- 2026-10-10 · F1 · Один draft PR #11: F1-1…4, без мерджа. Локальные frontend-проверки и браузерные сценарии прошли; ограничения полного CI/API описаны в F1.md.
