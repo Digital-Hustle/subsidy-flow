@@ -107,7 +107,7 @@ class UploadIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void upload_zip_isRejectedWithoutExpanding() throws Exception {
+    void upload_zip_isExpandedIntoFiles() throws Exception {
         String packageId = createPackage();
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         try (ZipOutputStream zip = new ZipOutputStream(out)) {
@@ -121,8 +121,8 @@ class UploadIntegrationTest extends AbstractIntegrationTest {
                         .file(new MockMultipartFile("files", "pack.zip", "application/zip", out.toByteArray()))
                         .with(authentication(user("SPECIALIST"))))
                 .andExpect(status().isAccepted())
-                .andExpect(jsonPath("$.files.length()").value(0))
-                .andExpect(jsonPath("$.rejected[0].code").value("FILE_TYPE_UNSUPPORTED"));
+                .andExpect(jsonPath("$.files.length()").value(2))
+                .andExpect(jsonPath("$.rejected.length()").value(0));
     }
 
     @Test

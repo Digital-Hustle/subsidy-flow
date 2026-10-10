@@ -6,6 +6,7 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.List;
 
 import javax.imageio.ImageIO;
@@ -91,13 +92,15 @@ class FileInspectorTest {
     }
 
     @Test
-    void png_rejectedEvenWhenImageCheckIsRegistered() throws IOException {
+    void png_accepted_truncatedPng_corrupted() throws IOException {
         byte[] image = png();
-        assertThat(inspector.inspect(image).reason()).isEqualTo(RejectReason.FILE_TYPE_UNSUPPORTED);
+        assertThat(inspector.inspect(image).isAccepted()).isTrue();
+        byte[] truncated = Arrays.copyOf(image, image.length / 2);
+        assertThat(inspector.inspect(truncated).reason()).isEqualTo(RejectReason.FILE_CORRUPTED);
     }
 
     @Test
-    void docxAndXlsx_rejected() throws IOException {
+    void docxAndXlsx_accepted() throws IOException {
         ByteArrayOutputStream docx = new ByteArrayOutputStream();
         try (XWPFDocument doc = new XWPFDocument()) {
             doc.createParagraph().createRun().setText("Заявка");
@@ -108,7 +111,7 @@ class FileInspectorTest {
             book.createSheet("Смета");
             book.write(xlsx);
         }
-        assertThat(inspector.inspect(docx.toByteArray()).reason()).isEqualTo(RejectReason.FILE_TYPE_UNSUPPORTED);
-        assertThat(inspector.inspect(xlsx.toByteArray()).reason()).isEqualTo(RejectReason.FILE_TYPE_UNSUPPORTED);
+        assertThat(inspector.inspect(docx.toByteArray()).mime()).isEqualTo(OfficeCheck.DOCX);
+        assertThat(inspector.inspect(xlsx.toByteArray()).mime()).isEqualTo(OfficeCheck.XLSX);
     }
 }

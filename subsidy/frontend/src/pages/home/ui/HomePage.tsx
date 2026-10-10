@@ -10,9 +10,9 @@ import { fadeUp, stagger, liftArea, liftItem, liftZoom, spring, inView, tween, d
 const art = (name: string) => `/art/${name}.webp`;
 
 const ZONES = [
-  { to: routes.apply, img: art("apply"), title: "Кабинет заявителя", text: "Анкета организации, список документов программы, загрузка PDF и статус разбора в реальном времени", device: "Без регистрации, по ссылке" },
+  { to: routes.apply, img: art("apply"), title: "Кабинет заявителя", text: "Анкета организации, список документов программы, загрузка документов и статус разбора в реальном времени", device: "Без регистрации, по ссылке" },
   { to: routes.operator, img: art("operator"), title: "Рабочее место специалиста", text: "Очередь заявок, оригинал рядом с полями, протокол проверки, запрос исправлений и решение", device: "Компьютер, вход по коду на почту" },
-  { to: routes.apply, img: art("model"), title: "Разбор моделью", text: "Вид документа и реквизиты — по содержимому PDF, ИНН и ОГРН сверяются с анкетой и контрольными суммами", device: "Локальная модель или API" },
+  { to: routes.apply, img: art("model"), title: "Разбор моделью", text: "Вид документа и реквизиты — по содержимому файла, ИНН и ОГРН сверяются с анкетой и контрольными суммами", device: "Локальная модель или API" },
 ];
 
 const STORIES = [
@@ -56,7 +56,7 @@ const HeroCards = () => (
       whileHover={{ rotate: -3, y: -6, transition: spring.hover }}
       className="absolute bottom-2 left-3 flex w-44 flex-col overflow-hidden rounded-2xl bg-card shadow-pop sm:bottom-0 sm:left-4 sm:w-60">
       <div className="flex-1 bg-linear-to-br from-sber-lime/60 via-sber-mint/30 to-transparent p-5 pb-10">
-        <p className="font-display text-lg font-semibold leading-tight tracking-display text-foreground sm:text-xl">PDF — реквизиты за минуты</p>
+        <p className="font-display text-lg font-semibold leading-tight tracking-display text-foreground sm:text-xl">Документы — реквизиты за минуты</p>
       </div>
       <Link to={routes.apply} className="flex items-center gap-1 bg-card/80 px-5 py-3.5 text-sm text-muted-foreground transition-colors duration-fast hover:text-foreground">Подать заявку<ChevronRight className="size-4" /></Link>
     </motion.div>
@@ -66,7 +66,7 @@ const HeroCards = () => (
 export const HomePage = () => {
   const stats = [
     { value: 10, label: "видов документов" },
-    { value: 1, label: "формат — PDF, в том числе с ЭП" },
+    { value: 7, label: "форматов: PDF, DOCX, XLSX, JPG, PNG, TIFF, HEIC" },
     { value: env.uploadMaxMb, label: "МБ — предел одного файла" },
     { value: 3, label: "роли сотрудников" },
   ];
@@ -92,7 +92,7 @@ export const HomePage = () => {
             Заявки на субсидию — разобраны и проверены за минуты
           </motion.h1>
           <motion.p variants={fadeUp} className="mt-5 max-w-2xl text-pretty text-base text-foreground/70 sm:text-lg">
-            Заявитель загружает пакет документов в PDF, модель сама определяет вид и вычитывает реквизиты, правила сверяют их с анкетой. Специалист видит оригинал рядом с протоколом проверки и разбирает только замечания.
+            Заявитель загружает пакет документов (PDF, DOCX, XLSX, сканы), модель сама определяет вид и вычитывает реквизиты, правила сверяют их с анкетой. Специалист видит оригинал рядом с протоколом проверки и разбирает только замечания.
           </motion.p>
           <motion.div variants={fadeUp} className="mt-8 flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:gap-3">
             <Link to={routes.apply} tabIndex={-1}><Button variant="brand" size="lg" block className="h-14 rounded-lg px-8"><FileUp />Подать заявку</Button></Link>
@@ -165,7 +165,7 @@ export const HomePage = () => {
             <ol className="mt-6 flex flex-col gap-3">
               {[
                 <>Выберите программу и заполните анкету организации — система покажет, какие документы нужны именно вам.</>,
-                <>Загрузите документы в PDF. Вид определится сам, ошибка в реквизитах или подписи вернётся с подсказкой, что исправить.</>,
+                <>Загрузите документы — PDF, DOCX, XLSX или скан. Вид определится сам, ошибка в реквизитах или подписи вернётся с подсказкой, что исправить.</>,
                 <>Специалист видит оригинал рядом с протоколом проверки, замечания подсвечены. Запросы, правки и решение сохраняются в истории заявки.</>,
               ].map((t, i) => (
                 <li key={i} className="flex gap-4 rounded-xl bg-muted p-4">

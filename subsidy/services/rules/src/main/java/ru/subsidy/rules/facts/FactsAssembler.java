@@ -30,7 +30,6 @@ public class FactsAssembler {
 
     private static final String CONFIDENCE = "confidence";
     private static final String FAILED = "FAILED";
-    private static final String APPLICATION_DATE = "applicationDate";
 
     private final DSLContext dsl;
     private final ObjectMapper json;
@@ -73,10 +72,8 @@ public class FactsAssembler {
                 .orderBy(Tables.PACKAGE_FILES.FILE_ID)
                 .fetch(rec -> new FileFacts(rec.getFileId(), rec.getVersion(), rec.getStage(), rec.getReasonCode()));
         LocalDate packageDate = view.getCreatedAt().atZoneSameInstant(props.zone()).toLocalDate();
+        // анкета — снимок для перепроверки; сроки и даты правила считают от сегодняшней даты, не от введённой вручную
         JsonNode application = view.getApplication() == null ? null : read(view.getApplication().data());
-        if (application != null && application.hasNonNull(APPLICATION_DATE)) {
-            packageDate = LocalDate.parse(application.path(APPLICATION_DATE).asText());
-        }
         return Optional.of(new PackageFacts(packageId, view.getInn(), view.getProgramCode(), packageDate, documents,
                 files, view.getApplicationRevision(), application));
     }

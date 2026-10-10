@@ -14,11 +14,11 @@ import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 /**
- * Снимок заявки ООО: сведения принадлежат пакету, а не общей карточке организации.
+ * Снимок заявки (ЮЛ или ИП): сведения принадлежат пакету, а не общей карточке организации.
  *
- * @param orgInn ИНН ООО
+ * @param orgInn ИНН: 10 цифр ЮЛ или 12 цифр ИП
  * @param orgName наименование
- * @param ogrn ОГРН
+ * @param ogrn ОГРН (13) или ОГРНИП (15)
  * @param address адрес с назначением
  * @param project проект
  * @param requestedAmount запрашиваемая сумма
@@ -27,9 +27,9 @@ import jakarta.validation.constraints.Size;
  * @param property участок, если применимо
  */
 public record ApplicationData(
-        @NotBlank @Pattern(regexp = "[0-9]{10}") String orgInn,
+        @NotBlank @Pattern(regexp = "[0-9]{10}|[0-9]{12}") String orgInn,
         @NotBlank @Size(max = ApplicationData.NAME_MAX) String orgName,
-        @NotBlank @Pattern(regexp = "[0-9]{13}") String ogrn,
+        @NotBlank @Pattern(regexp = "[0-9]{13}|[0-9]{15}") String ogrn,
         @NotNull @Valid Address address,
         @NotBlank @Size(max = ApplicationData.PROJECT_MAX) String project,
         @NotNull @DecimalMin("0.01") @Digits(integer = ApplicationData.MONEY_DIGITS, fraction = 2)

@@ -78,7 +78,7 @@ const RemoveButton = ({ applicationId, docId }: { applicationId: string; docId: 
   return <Button size="icon-sm" variant="quiet" aria-label="Удалить документ" disabled={rm.isPending} onClick={() => rm.mutate(docId)}><Trash2 /></Button>;
 };
 
-/** Список документов программы (считает сервер), загрузка PDF в пункт, стадии разбора по SSE. */
+/** Список документов программы (считает сервер), загрузка файла в пункт, стадии разбора по SSE. */
 export const DocumentChecklist = ({ app, titleOf }: { app: ApplicantApplication; titleOf: (t?: string) => string }) => {
   const id = app.applicationId;
   const up = useUpload(id);
@@ -128,7 +128,7 @@ export const DocumentChecklist = ({ app, titleOf }: { app: ApplicantApplication;
           {warn && <p className="mt-3 text-sm text-warning-soft-foreground">{warn.join(". ")}</p>}
           {!locked && (list.length === 0 || state === "PROBLEM" || type === EXTRA) && (
             <div className="mt-4">
-              <UploadButtons size="md" label={err ? "Загрузить другой файл" : list.length ? "Ещё документ" : "Загрузить PDF"} disabled={up.pendingFor === type}
+              <UploadButtons size="md" label={err ? "Загрузить другой файл" : list.length ? "Ещё документ" : "Загрузить файл"} disabled={up.pendingFor === type}
                 onFile={(f) => up.upload({ file: f, slotType: type === EXTRA ? undefined : type })} />
               {up.pendingFor === type && <p className="mt-2 text-sm text-muted-foreground">Отправляем файл…</p>}
             </div>

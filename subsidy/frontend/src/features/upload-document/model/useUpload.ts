@@ -7,12 +7,10 @@ import { env } from "@/shared/config/env";
 export type UploadError = { text: string; hint?: string };
 type Vars = { file: File; slotType?: string; docId?: string; mode?: "add" | "replace" };
 
-const PDF_ERROR: UploadError = { text: "Принимаются только документы PDF", hint: "Сохраните документ в PDF — изображения, Office и ZIP не принимаются" };
-const isPdf = (f: File) => f.type === "application/pdf" || /\.pdf$/i.test(f.name);
 
 /**
  * Загрузка в пункт, добавление страниц, замена. Отказ сервера — не toast, а состояние пункта (текст и подсказка
- * из problem+json). Клиентские проверки PDF и размера — только подсказка, решает сервер (PDF проверяется по байтам).
+ * из problem+json). Клиентская проверка размера — только подсказка; формат решает сервер по байтам (PDF, DOCX, XLSX, JPG/PNG/TIFF/HEIC, ZIP).
  */
 export const useUpload = (applicationId: string) => {
   const qc = useQueryClient();
@@ -30,7 +28,6 @@ export const useUpload = (applicationId: string) => {
   });
   return {
     upload: (v: Vars) => {
-      if (!isPdf(v.file)) { setErrors((s) => ({ ...s, [key(v)]: PDF_ERROR })); return; }
       if (v.file.size > env.uploadMaxMb * 1024 * 1024) { setErrors((s) => ({ ...s, [key(v)]: { text: `Файл больше ${env.uploadMaxMb} МБ`, hint: "Разделите документ или уменьшите разрешение скана" } })); return; }
       m.mutate(v);
     },
