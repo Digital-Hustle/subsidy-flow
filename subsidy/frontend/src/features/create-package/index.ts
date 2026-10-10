@@ -1,1 +1,2 @@
-export { CreatePackageDialog } from "./ui/CreatePackageDialog";
+export { CreatePackageButton } from "./ui/CreatePackageDialog";
+export { UploadFiles } from "./ui/UploadFiles";

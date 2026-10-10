@@ -10,7 +10,7 @@ code_of() { curl -sk -o /dev/null -w '%{http_code}' "$@"; }
 
 curl -fsSk "$GW_HEALTH" | grep -q '"UP"' && ok "gateway health" || bad "gateway health ($GW_HEALTH)"
 curl -fsSk "$K/realms/subsidy/.well-known/openid-configuration" >/dev/null && ok "keycloak realm subsidy" || bad "keycloak"
-curl -fsSk "$H/specialist" | grep -qi '<div id="root"' && ok "frontend /specialist" || bad "frontend /specialist"
+curl -fsSk "$H/operator" | grep -qi '<div id="root"' && ok "frontend /operator" || bad "frontend /operator"
 
 # Рабочее место закрыто: каждый сервис без токена — 401
 for svc in package docproc rules assistant; do
