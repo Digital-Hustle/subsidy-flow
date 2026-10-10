@@ -77,6 +77,31 @@ class ProtocolIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
+    void applicationChange_rechecksEvenWhenDocumentFieldsAreUnchanged() {
+        UUID id = packageWithApplication()[0];
+        assertThat(protocols.check(id)).isPresent();
+        ObjectNode application = objectMapper.createObjectNode().put("orgInn", INN)
+                .put("project", "Проект 1").put("applicationDate", "2026-10-01");
+        ObjectNode payload = objectMapper.createObjectNode().put("packageId", id.toString())
+                .put("orgId", UUID.randomUUID().toString()).put("inn", INN).put("programCode", "INNOVATION")
+                .put("applicationRevision", 1).put("changedBy", "editor");
+        payload.set("application", application);
+        event("PackageApplicationChanged", payload);
+        assertThat(dsl.fetchExists(Tables.RECHECK_REQUESTS, Tables.RECHECK_REQUESTS.PACKAGE_ID.eq(id))).isTrue();
+        assertThat(protocols.check(id)).isPresent();
+        assertThat(protocols.check(id)).isEmpty();
+        application.put("project", "Проект 2");
+        payload.put("applicationRevision", 2);
+        event("PackageApplicationChanged", payload);
+        assertThat(protocols.check(id)).isPresent();
+        payload.put("applicationRevision", 1);
+        event("PackageApplicationChanged", payload);
+        assertThat(dsl.selectFrom(Tables.PACKAGE_VIEW).where(Tables.PACKAGE_VIEW.PACKAGE_ID.eq(id)).fetchSingle()
+                .getApplicationRevision()).isEqualTo(2);
+        assertThat(dsl.fetchCount(Tables.PROTOCOLS, Tables.PROTOCOLS.PACKAGE_ID.eq(id))).isEqualTo(3);
+    }
+
+    @Test
     void protocol_beforeCheck_409_thenIncompleteWithMissing() throws Exception {
         UUID[] ids = packageWithApplication();
         String url = "/api/v1/packages/" + ids[0] + "/protocol";

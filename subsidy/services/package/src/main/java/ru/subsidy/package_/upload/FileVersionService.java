@@ -96,6 +96,8 @@ public class FileVersionService {
                 .set(Tables.FILE_VERSIONS.MIME, result.mime())
                 .set(Tables.FILE_VERSIONS.SIZE_BYTES, (long) file.content().length)
                 .set(Tables.FILE_VERSIONS.PAGES, result.pages())
+                .set(Tables.FILE_VERSIONS.SIGNATURE_STATUS, result.electronicSignature().status())
+                .set(Tables.FILE_VERSIONS.SIGNATURE_REASON, result.electronicSignature().reason())
                 .set(Tables.FILE_VERSIONS.ORIGINAL_NAME, UploadService.displayName(file.name()))
                 .set(Tables.FILE_VERSIONS.CREATED_BY, userId)
                 .set(Tables.FILE_VERSIONS.CREATED_AT, now)

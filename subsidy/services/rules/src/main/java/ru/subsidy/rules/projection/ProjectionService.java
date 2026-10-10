@@ -56,6 +56,8 @@ public class ProjectionService {
     private static final String COLLECTING = "COLLECTING";
     private static final String RECEIVED = "RECEIVED";
     private static final String INN = "inn";
+    private static final String ORG_ID = "orgId";
+    private static final String APPLICATION_REVISION = "applicationRevision";
 
     private final DSLContext dsl;
     private final IdempotentConsumer inbox;
@@ -95,6 +97,7 @@ public class ProjectionService {
         }
         switch (type) {
             case "PackageCreated" -> created(payload);
+            case "PackageApplicationChanged" -> applicationChanged(payload);
             case "PackageDecided" -> decided(payload);
             case "FileReceived", "FileReplaced" -> fileReceived(payload);
             case "FileRemoved" -> fileRemoved(payload);
@@ -111,7 +114,7 @@ public class ProjectionService {
         OffsetDateTime now = OffsetDateTime.now(clock);
         dsl.insertInto(Tables.PACKAGE_VIEW)
                 .set(Tables.PACKAGE_VIEW.PACKAGE_ID, packageId)
-                .set(Tables.PACKAGE_VIEW.ORG_ID, optionalUuid(payload, "orgId"))
+                .set(Tables.PACKAGE_VIEW.ORG_ID, optionalUuid(payload, ORG_ID))
                 .set(Tables.PACKAGE_VIEW.INN, text(payload, INN))
                 .set(Tables.PACKAGE_VIEW.PROGRAM_CODE, payload.path(K_PROGRAM_CODE).asText())
                 .set(Tables.PACKAGE_VIEW.STATUS, COLLECTING)
@@ -133,6 +136,24 @@ public class ProjectionService {
                 .where(Tables.PACKAGE_VIEW.PACKAGE_ID.eq(packageId)).execute();
         history.append(text(payload, INN), text(payload, "decidedBy"), "PACKAGE_DECIDED", packageId,
                 Map.of(K_DECISION, decision));
+    }
+
+    private void applicationChanged(JsonNode payload) {
+        UUID packageId = uuid(payload, PACKAGE_ID);
+        int revision = payload.path(APPLICATION_REVISION).asInt();
+        int updated = dsl.update(Tables.PACKAGE_VIEW)
+                .set(Tables.PACKAGE_VIEW.ORG_ID, uuid(payload, ORG_ID))
+                .set(Tables.PACKAGE_VIEW.INN, text(payload, INN))
+                .set(Tables.PACKAGE_VIEW.APPLICATION, JSONB.valueOf(payload.path("application").toString()))
+                .set(Tables.PACKAGE_VIEW.APPLICATION_REVISION, revision)
+                .set(Tables.PACKAGE_VIEW.UPDATED_AT, OffsetDateTime.now(clock))
+                .where(Tables.PACKAGE_VIEW.PACKAGE_ID.eq(packageId))
+                .and(Tables.PACKAGE_VIEW.APPLICATION_REVISION.lt(revision)).execute();
+        if (updated > 0) {
+            history.append(text(payload, INN), text(payload, "changedBy"), "APPLICATION_CHANGED", packageId,
+                    Map.of(APPLICATION_REVISION, revision));
+            recheck.request(packageId);
+        }
     }
 
     private void fileReceived(JsonNode payload) {

@@ -38,6 +38,7 @@ public class PackageService {
     private final OrganizationService organizations;
     private final List<String> programs;
     private final OutboxWriter outbox;
+    private final ApplicationService applications;
 
     /**
      * Конструктор.
@@ -47,14 +48,17 @@ public class PackageService {
      * @param organizations организации
      * @param programs доступные программы
      * @param outbox outbox событий
+     * @param applications заявки
      */
     public PackageService(DSLContext dsl, Clock clock, OrganizationService organizations,
-                          @Value("${subsidy.programs:INNOVATION,BEACH,MODERNIZATION}") List<String> programs, OutboxWriter outbox) {
+                          @Value("${subsidy.programs:INNOVATION,BEACH,MODERNIZATION}") List<String> programs,
+                          OutboxWriter outbox, ApplicationService applications) {
         this.dsl = dsl;
         this.clock = clock;
         this.organizations = organizations;
         this.programs = List.copyOf(programs);
         this.outbox = outbox;
+        this.applications = applications;
     }
 
     /**
@@ -64,13 +68,18 @@ public class PackageService {
      * @param programCode код программы
      * @param idempotencyKey ключ идемпотентности или null
      * @param userId кто создаёт (из JWT)
+     * @param application полная заявка или null для черновика
      * @return пакет
      * @throws DomainException PROGRAM_NOT_FOUND или INN_INVALID
      */
     @Transactional
-    public PackageView create(String orgInn, String programCode, String idempotencyKey, String userId) {
+    public PackageView create(String orgInn, String programCode, String idempotencyKey, String userId,
+                               ApplicationData application) {
         if (!programs.contains(programCode)) {
             throw new DomainException(ErrorCode.PROGRAM_NOT_FOUND, "Программа не найдена: " + programCode);
+        }
+        if (application != null && !orgInn.equals(application.orgInn())) {
+            throw new DomainException(ErrorCode.VALIDATION_ERROR, "ИНН заявки должен совпадать с ИНН пакета");
         }
         if (idempotencyKey != null) {
             Optional<UUID> existing = dsl.select(Tables.PACKAGES.ID).from(Tables.PACKAGES)
@@ -95,6 +104,9 @@ public class PackageService {
         outbox.append(Topics.PACKAGE_PACKAGE_V1, "PackageCreated", newId.toString(), Map.of(
                 "packageId", newId.toString(), "orgId", org.id().toString(), "inn", org.inn(),
                 "programCode", programCode, "createdBy", userId));
+        if (application != null) {
+            applications.update(newId, 0, application, userId);
+        }
         return get(newId);
     }
 
@@ -107,16 +119,19 @@ public class PackageService {
     @Transactional(readOnly = true)
     public PackageView get(UUID packageId) {
         return dsl.select(Tables.PACKAGES.ID, Tables.PACKAGES.STATUS, Tables.PACKAGES.PROGRAM_CODE, Tables.PACKAGES.UPDATED_AT,
+                        Tables.PACKAGES.APPLICATION, Tables.PACKAGES.APPLICATION_REVISION,
                         Tables.ORGANIZATIONS.INN, Tables.ORGANIZATIONS.NAME)
                 .from(Tables.PACKAGES).join(Tables.ORGANIZATIONS).on(Tables.ORGANIZATIONS.ID.eq(Tables.PACKAGES.ORG_ID))
                 .where(Tables.PACKAGES.ID.eq(packageId))
-                .fetchOptional(PackageService::toView)
+                .fetchOptional(this::toView)
                 .orElseThrow(() -> new NotFoundException("Пакет не найден"));
     }
 
-    private static PackageView toView(Record rec) {
+    private PackageView toView(Record rec) {
+        ApplicationData application = applications.read(rec.get(Tables.PACKAGES.APPLICATION));
         return new PackageView(rec.get(Tables.PACKAGES.ID), rec.get(Tables.PACKAGES.STATUS), rec.get(Tables.PACKAGES.PROGRAM_CODE),
-                rec.get(Tables.ORGANIZATIONS.INN), rec.get(Tables.ORGANIZATIONS.NAME), rec.get(Tables.PACKAGES.UPDATED_AT));
+                rec.get(Tables.ORGANIZATIONS.INN), application == null ? rec.get(Tables.ORGANIZATIONS.NAME) : application.orgName(),
+                rec.get(Tables.PACKAGES.UPDATED_AT), rec.get(Tables.PACKAGES.APPLICATION_REVISION), application);
     }
 
     /**
@@ -128,8 +143,10 @@ public class PackageService {
      * @param orgInn ИНН
      * @param orgName наименование
      * @param updatedAt изменён
+     * @param applicationRevision версия заявки
+     * @param application полная заявка или null
      */
     public record PackageView(UUID id, String status, String programCode, String orgInn, String orgName,
-                              OffsetDateTime updatedAt) {
+                              OffsetDateTime updatedAt, int applicationRevision, ApplicationData application) {
     }
 }

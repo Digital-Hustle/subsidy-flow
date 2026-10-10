@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import com.fasterxml.jackson.databind.JsonNode;
+
 /**
  * Всё, что правила знают о пакете: заявитель, документы с полями, файлы.
  *
@@ -14,9 +16,26 @@ import java.util.UUID;
  * @param packageDate дата пакета (для сроков)
  * @param documents документы
  * @param files файлы
+ * @param applicationRevision ревизия заявки
+ * @param application снимок заявки или null
  */
 public record PackageFacts(UUID packageId, String inn, String programCode, LocalDate packageDate,
-                           List<DocFacts> documents, List<FileFacts> files) {
+                           List<DocFacts> documents, List<FileFacts> files, int applicationRevision, JsonNode application) {
+
+    /**
+     * Факты старого пакета без формы заявки.
+     *
+     * @param packageId пакет
+     * @param inn ИНН
+     * @param programCode программа
+     * @param packageDate дата
+     * @param documents документы
+     * @param files файлы
+     */
+    public PackageFacts(UUID packageId, String inn, String programCode, LocalDate packageDate,
+                         List<DocFacts> documents, List<FileFacts> files) {
+        this(packageId, inn, programCode, packageDate, documents, files, 0, null);
+    }
 
     /**
      * Документы вида (уверенно определённые).

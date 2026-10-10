@@ -219,6 +219,7 @@ public class PipelineEventsService {
                 .set(Tables.PACKAGES.NEEDS_REVIEW, payload.path("needsReview").asInt(0))
                 .set(Tables.PACKAGES.UPDATED_AT, OffsetDateTime.now(clock))
                 .where(Tables.PACKAGES.ID.eq(packageId))
+                .and(Tables.PACKAGES.APPLICATION_REVISION.eq(payload.path("applicationRevision").asInt(0)))
                 .and(Tables.PACKAGES.STATUS.ne("DECIDED"))
                 .execute();
         Map<String, Object> data = new HashMap<>();

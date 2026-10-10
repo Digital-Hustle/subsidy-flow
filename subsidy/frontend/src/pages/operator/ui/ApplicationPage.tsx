@@ -178,7 +178,7 @@ export const ApplicationPage = () => {
 
       {!docs.length ? (
         <div className="grid gap-4 lg:grid-cols-2">
-          <Card><EmptyState icon={<FileText />} title="Документов пока нет" text={card.source === "SPECIALIST" ? "Загрузите документы организации в PDF" : "Заявитель ещё не загрузил файлы"}
+          <Card><EmptyState icon={<FileText />} title="Документов пока нет" text={card.source === "SPECIALIST" ? "Загрузите документы организации: PDF, DOCX, XLSX, сканы или ZIP" : "Заявитель ещё не загрузил файлы"}
             action={canAct && !decided ? <UploadFiles packageId={id} /> : undefined} /></Card>
           <ProtocolPanel packageId={id} onEvidence={onEvidence} />
         </div>

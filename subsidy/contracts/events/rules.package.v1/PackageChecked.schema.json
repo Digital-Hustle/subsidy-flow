@@ -50,6 +50,10 @@
     "needsReview": {
       "type": "integer",
       "minimum": 0
+    },
+    "applicationRevision": {
+      "type": "integer",
+      "minimum": 0
     }
   },
   "additionalProperties": false

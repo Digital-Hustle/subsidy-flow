@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 import ru.subsidy.common.exception.NotFoundException;
 import ru.subsidy.package_.jooq.Tables;
 import ru.subsidy.package_.pkg.PackageQueryService.OrgRef;
+import ru.subsidy.package_.upload.SignaturePresence;
 
 /**
  * Карточка пакета: статус, сводка протокола, решение и файлы с найденными документами.
@@ -22,14 +23,17 @@ import ru.subsidy.package_.pkg.PackageQueryService.OrgRef;
 public class PackageCardService {
 
     private final DSLContext dsl;
+    private final ApplicationService applications;
 
     /**
      * Конструктор.
      *
      * @param dsl jOOQ
+     * @param applications заявки
      */
-    public PackageCardService(DSLContext dsl) {
+    public PackageCardService(DSLContext dsl, ApplicationService applications) {
         this.dsl = dsl;
+        this.applications = applications;
     }
 
     /**
@@ -57,9 +61,12 @@ public class PackageCardService {
             decision = new DecisionInfo(row.get(Tables.PACKAGES.DECISION), row.get(Tables.PACKAGES.DECISION_COMMENT),
                     row.get(Tables.PACKAGES.DECIDED_BY), row.get(Tables.PACKAGES.DECIDED_AT));
         }
+        ApplicationData application = applications.read(row.get(Tables.PACKAGES.APPLICATION));
         return new PackageCard(packageId, row.get(Tables.PACKAGES.STATUS), row.get(Tables.PACKAGES.PROGRAM_CODE),
-                new OrgRef(row.get(Tables.ORGANIZATIONS.INN), row.get(Tables.ORGANIZATIONS.NAME)),
-                protocol, decision, row.get(Tables.PACKAGES.UPDATED_AT), files(packageId));
+                new OrgRef(row.get(Tables.ORGANIZATIONS.INN),
+                        application == null ? row.get(Tables.ORGANIZATIONS.NAME) : application.orgName()),
+                protocol, decision, row.get(Tables.PACKAGES.UPDATED_AT), files(packageId),
+                row.get(Tables.PACKAGES.APPLICATION_REVISION), application);
     }
 
     private List<FileCard> files(UUID packageId) {
@@ -70,7 +77,8 @@ public class PackageCardService {
                 .orderBy(Tables.FILE_DOCUMENTS.FROM_PAGE, Tables.FILE_DOCUMENTS.DOCUMENT_ID)
                 .fetchGroups(Tables.FILE_DOCUMENTS.FILE_ID, PackageCardService::toDocument);
         return dsl.select(Tables.FILES.ID, Tables.FILES.CURRENT_VERSION, Tables.FILES.STAGE, Tables.FILES.REASON_CODE,
-                        Tables.FILE_VERSIONS.ORIGINAL_NAME, Tables.FILE_VERSIONS.MIME, Tables.FILE_VERSIONS.PAGES)
+                        Tables.FILE_VERSIONS.ORIGINAL_NAME, Tables.FILE_VERSIONS.MIME, Tables.FILE_VERSIONS.PAGES,
+                        Tables.FILE_VERSIONS.SIGNATURE_STATUS, Tables.FILE_VERSIONS.SIGNATURE_REASON)
                 .from(Tables.FILES).join(Tables.FILE_VERSIONS)
                 .on(Tables.FILE_VERSIONS.FILE_ID.eq(Tables.FILES.ID))
                 .and(Tables.FILE_VERSIONS.VERSION.eq(Tables.FILES.CURRENT_VERSION))
@@ -80,7 +88,9 @@ public class PackageCardService {
                         rec.get(Tables.FILE_VERSIONS.ORIGINAL_NAME), rec.get(Tables.FILE_VERSIONS.MIME),
                         rec.get(Tables.FILE_VERSIONS.PAGES), rec.get(Tables.FILES.STAGE),
                         rec.get(Tables.FILES.REASON_CODE),
-                        documents.getOrDefault(rec.get(Tables.FILES.ID), List.of())));
+                        documents.getOrDefault(rec.get(Tables.FILES.ID), List.of()),
+                        SignaturePresence.stored(rec.get(Tables.FILE_VERSIONS.SIGNATURE_STATUS),
+                                rec.get(Tables.FILE_VERSIONS.SIGNATURE_REASON))));
     }
 
     private static DocumentCard toDocument(Record rec) {
@@ -101,9 +111,12 @@ public class PackageCardService {
      * @param decision решение или null
      * @param updatedAt изменён
      * @param files файлы
+     * @param applicationRevision версия заявки
+     * @param application заявка
      */
     public record PackageCard(UUID packageId, String status, String program, OrgRef org, ProtocolSummary protocol,
-                              DecisionInfo decision, OffsetDateTime updatedAt, List<FileCard> files) {
+                              DecisionInfo decision, OffsetDateTime updatedAt, List<FileCard> files,
+                              int applicationRevision, ApplicationData application) {
     }
 
     /**
@@ -140,9 +153,10 @@ public class PackageCardService {
      * @param stage стадия
      * @param reasonCode причина
      * @param documents найденные документы
+     * @param electronicSignature наличие ЭП, без проверки действительности
      */
     public record FileCard(UUID fileId, int version, String name, String mime, Integer pages, String stage,
-                           String reasonCode, List<DocumentCard> documents) {
+                           String reasonCode, List<DocumentCard> documents, SignaturePresence electronicSignature) {
     }
 
     /**

@@ -50,7 +50,7 @@ const KeyCard = ({ id, resumeCode }: { id: string; resumeCode?: string }) => {
   );
 };
 
-/** /apply/:id — анкета (B1) → список документов программы → загрузка PDF → стадии по SSE → решение. */
+/** /apply/:id — анкета (B1) → список документов программы → загрузка файлов → стадии по SSE → решение. */
 export const ApplyApplicationPage = () => {
   const { id = "" } = useParams();
   const loc = useLocation();
@@ -99,7 +99,7 @@ export const ApplyApplicationPage = () => {
     <>
       <PageHeader kicker={<span className="flex flex-wrap items-center gap-2">{app.programName ?? "Заявка на субсидию"} · от {dateTimeRu(app.createdAt)} <AppStatusBadge applicant status={app.status} /></span>}
         title={!hasProfile || editProfile ? "Анкета заявителя" : "Документы заявки"}
-        sub={!hasProfile || editProfile ? "Данные организации и проекта — по ним специалист сверит документы" : "Загрузите каждый документ PDF в свой пункт. Если ошибётесь пунктом — вид документа определим сами"} />
+        sub={!hasProfile || editProfile ? "Данные организации и проекта — по ним специалист сверит документы" : "Загрузите каждый документ (PDF, DOCX, XLSX или скан) в свой пункт. Если ошибётесь пунктом — вид документа определим сами"} />
       <KeyCard id={id} resumeCode={fresh?.resumeCode} />
       {decided && verdict === "APPROVE" && (
         <Card className="mb-4 flex items-start gap-3 bg-success-soft p-4 text-success-soft-foreground"><PartyPopper className="size-5 shrink-0" /><div><p className="font-semibold">Заявка одобрена</p><p className="text-sm">Агентство свяжется с вами по указанным контактам{app.decision?.comment ? `: ${app.decision.comment}` : ""}</p></div></Card>

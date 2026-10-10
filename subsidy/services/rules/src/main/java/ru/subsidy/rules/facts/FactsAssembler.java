@@ -72,8 +72,10 @@ public class FactsAssembler {
                 .orderBy(Tables.PACKAGE_FILES.FILE_ID)
                 .fetch(rec -> new FileFacts(rec.getFileId(), rec.getVersion(), rec.getStage(), rec.getReasonCode()));
         LocalDate packageDate = view.getCreatedAt().atZoneSameInstant(props.zone()).toLocalDate();
+        // анкета — снимок для перепроверки; сроки и даты правила считают от сегодняшней даты, не от введённой вручную
+        JsonNode application = view.getApplication() == null ? null : read(view.getApplication().data());
         return Optional.of(new PackageFacts(packageId, view.getInn(), view.getProgramCode(), packageDate, documents,
-                files));
+                files, view.getApplicationRevision(), application));
     }
 
     private Map<UUID, Map<String, String>> overrides(UUID packageId) {

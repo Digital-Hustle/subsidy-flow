@@ -985,6 +985,13 @@
             "items" : {
               "$ref" : "#/components/schemas/FileFacts"
             }
+          },
+          "applicationRevision" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "application" : {
+            "$ref" : "#/components/schemas/JsonNode"
           }
         }
       },

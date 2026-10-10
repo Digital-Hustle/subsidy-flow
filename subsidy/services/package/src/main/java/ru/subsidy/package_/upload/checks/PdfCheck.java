@@ -34,7 +34,7 @@ public class PdfCheck implements FormatCheck {
             } else if (pages > limits.maxPages()) {
                 result = InspectionResult.rejected(PDF, RejectReason.TOO_MANY_PAGES);
             } else {
-                result = InspectionResult.accepted(PDF, pages);
+                result = new InspectionResult(PDF, pages, null, PdfSignatureCheck.inspect(doc, content.length));
             }
         } catch (InvalidPasswordException encrypted) {
             result = InspectionResult.rejected(PDF, RejectReason.PDF_ENCRYPTED);

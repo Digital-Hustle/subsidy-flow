@@ -21,6 +21,7 @@ import jakarta.validation.constraints.Size;
 
 import ru.subsidy.common.security.CurrentUser;
 import ru.subsidy.package_.pkg.DecisionService;
+import ru.subsidy.package_.pkg.ApplicationData;
 import ru.subsidy.package_.pkg.DecisionService.DecisionResult;
 import ru.subsidy.package_.pkg.PackageCardService;
 import ru.subsidy.package_.pkg.PackageCardService.PackageCard;
@@ -75,7 +76,7 @@ public class PackagesController {
                                   @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
                                   CurrentUser user) {
         return PackageResponse.of(packages.create(request.orgInn(), request.programCode(), idempotencyKey,
-                user.userId()));
+                user.userId(), request.application()));
     }
 
     /**
@@ -139,8 +140,10 @@ public class PackagesController {
      *
      * @param orgInn ИНН заявителя
      * @param programCode программа
+     * @param application полная заявка или null для черновика
      */
-    public record CreatePackageRequest(@NotBlank String orgInn, @NotBlank String programCode) {
+    public record CreatePackageRequest(@NotBlank String orgInn, @NotBlank String programCode,
+                                        @Valid ApplicationData application) {
     }
 
     /**
@@ -150,12 +153,15 @@ public class PackagesController {
      * @param status статус
      * @param program программа
      * @param org организация
+     * @param applicationRevision версия заявки
+     * @param application полная заявка или null
      */
-    public record PackageResponse(UUID packageId, String status, String program, Org org) {
+    public record PackageResponse(UUID packageId, String status, String program, Org org,
+                                    int applicationRevision, ApplicationData application) {
 
         static PackageResponse of(PackageView view) {
             return new PackageResponse(view.id(), view.status(), view.programCode(),
-                    new Org(view.orgInn(), view.orgName()));
+                    new Org(view.orgInn(), view.orgName()), view.applicationRevision(), view.application());
         }
     }
 

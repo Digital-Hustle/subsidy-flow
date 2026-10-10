@@ -56,6 +56,7 @@ public class ProtocolService {
     private static final String WARNINGS_KEY = "warnings";
     private static final String FAILED_KEY = "failed";
     private static final String VERSION_KEY = "version";
+    private static final String APPLICATION_REVISION = "applicationRevision";
     private static final Logger LOG = LoggerFactory.getLogger(ProtocolService.class);
     private static final List<String> REVIEW_REASONS = List.of("TYPE_UNKNOWN", "TYPE_OTHER");
 
@@ -122,7 +123,9 @@ public class ProtocolService {
         // через текст: сравнение со снимком из jsonb не зависит от типов чисел Jackson (DecimalNode vs DoubleNode)
         JsonNode snapshot = read(write(Map.of("program", program.code() + "@" + program.version(),
                 "rules", RuleEngine.RULES_VERSION, "documents", facts.documents(), "files", facts.files(),
-                "inn", String.valueOf(facts.inn()), "packageDate", facts.packageDate().toString())));
+                "inn", String.valueOf(facts.inn()), "packageDate", facts.packageDate().toString(),
+                APPLICATION_REVISION, facts.applicationRevision(),
+                "application", facts.application() == null ? json.nullNode() : facts.application())));
         Optional<JsonNode> previous = latestFacts(facts.packageId());
         if (previous.isPresent() && previous.get().equals(snapshot)) {
             LOG.debug("facts unchanged package={}", facts.packageId());
@@ -143,6 +146,7 @@ public class ProtocolService {
         saveResults(protocolId, facts, program, results, OffsetDateTime.now(clock));
         Map<String, Object> event = new HashMap<>();
         event.put("packageId", facts.packageId().toString());
+        event.put(APPLICATION_REVISION, facts.applicationRevision());
         event.put("protocolId", protocolId.toString());
         event.put(VERSION_KEY, version);
         event.put("protocolStatus", status);

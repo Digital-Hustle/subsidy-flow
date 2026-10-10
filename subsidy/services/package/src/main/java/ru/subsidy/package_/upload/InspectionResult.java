@@ -6,8 +6,9 @@ package ru.subsidy.package_.upload;
  * @param mime определённый тип
  * @param pages число страниц (0, если неизвестно)
  * @param reason причина отказа или null
+ * @param electronicSignature наличие ЭП без проверки действительности
  */
-public record InspectionResult(String mime, int pages, RejectReason reason) {
+public record InspectionResult(String mime, int pages, RejectReason reason, SignaturePresence electronicSignature) {
 
     /**
      * Принятый файл.
@@ -17,7 +18,7 @@ public record InspectionResult(String mime, int pages, RejectReason reason) {
      * @return результат
      */
     public static InspectionResult accepted(String mime, int pages) {
-        return new InspectionResult(mime, pages, null);
+        return new InspectionResult(mime, pages, null, SignaturePresence.unknown("NOT_INSPECTED"));
     }
 
     /**
@@ -28,7 +29,7 @@ public record InspectionResult(String mime, int pages, RejectReason reason) {
      * @return результат
      */
     public static InspectionResult rejected(String mime, RejectReason reason) {
-        return new InspectionResult(mime, 0, reason);
+        return new InspectionResult(mime, 0, reason, SignaturePresence.unknown("FILE_REJECTED"));
     }
 
     /**

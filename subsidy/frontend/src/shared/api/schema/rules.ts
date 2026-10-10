@@ -324,6 +324,9 @@ export interface components {
             packageDate?: string;
             documents?: components["schemas"]["DocFacts"][];
             files?: components["schemas"]["FileFacts"][];
+            /** Format: int32 */
+            applicationRevision?: number;
+            application?: components["schemas"]["JsonNode"];
         };
         ProtocolView: {
             /** Format: uuid */
