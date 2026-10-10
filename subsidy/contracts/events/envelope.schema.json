@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:subsidy:events:envelope",
+  "title": "EventEnvelope",
+  "description": "Конверт любого события (libs/common EventEnvelope). Ключ Kafka — aggregateId.",
+  "type": "object",
+  "required": [
+    "eventId",
+    "type",
+    "occurredAt",
+    "aggregateId",
+    "payload"
+  ],
+  "properties": {
+    "eventId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "type": {
+      "type": "string"
+    },
+    "occurredAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "aggregateId": {
+      "type": "string"
+    },
+    "traceparent": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "payload": {
+      "type": "object"
+    }
+  },
+  "additionalProperties": false
+}

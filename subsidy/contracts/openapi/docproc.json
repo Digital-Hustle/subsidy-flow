@@ -1,0 +1,554 @@
+{
+  "openapi" : "3.1.0",
+  "info" : {
+    "title" : "OpenAPI definition",
+    "version" : "v0"
+  },
+  "servers" : [ {
+    "url" : "http://localhost",
+    "description" : "Generated server url"
+  } ],
+  "paths" : {
+    "/api/v1/documents/{documentId}/type" : {
+      "put" : {
+        "tags" : [ "documents-controller-impl" ],
+        "operationId" : "overrideType",
+        "parameters" : [ {
+          "name" : "documentId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/TypeRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "400" : {
+            "description" : "Bad Request",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "413" : {
+            "description" : "Payload Too Large",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "202" : {
+            "description" : "Accepted"
+          }
+        }
+      }
+    },
+    "/api/v1/files/{fileId}/reprocess" : {
+      "post" : {
+        "tags" : [ "documents-controller-impl" ],
+        "operationId" : "reprocess",
+        "parameters" : [ {
+          "name" : "fileId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "400" : {
+            "description" : "Bad Request",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "413" : {
+            "description" : "Payload Too Large",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "202" : {
+            "description" : "Accepted"
+          }
+        }
+      }
+    },
+    "/internal/docproc/packages/{packageId}/documents" : {
+      "get" : {
+        "tags" : [ "internal-documents-controller-impl" ],
+        "operationId" : "documents",
+        "parameters" : [ {
+          "name" : "packageId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "400" : {
+            "description" : "Bad Request",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "413" : {
+            "description" : "Payload Too Large",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ItemsDocumentResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/ping" : {
+      "get" : {
+        "tags" : [ "ping-controller-impl" ],
+        "operationId" : "ping",
+        "responses" : {
+          "400" : {
+            "description" : "Bad Request",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "413" : {
+            "description" : "Payload Too Large",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PingRs"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/packages/{packageId}/documents" : {
+      "get" : {
+        "tags" : [ "documents-controller-impl" ],
+        "operationId" : "byPackage",
+        "parameters" : [ {
+          "name" : "packageId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "400" : {
+            "description" : "Bad Request",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "413" : {
+            "description" : "Payload Too Large",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ItemsDocumentResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/model/status" : {
+      "get" : {
+        "tags" : [ "documents-controller-impl" ],
+        "operationId" : "modelStatus",
+        "responses" : {
+          "400" : {
+            "description" : "Bad Request",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "413" : {
+            "description" : "Payload Too Large",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/LlmStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/documents/{documentId}/result" : {
+      "get" : {
+        "tags" : [ "documents-controller-impl" ],
+        "operationId" : "result",
+        "parameters" : [ {
+          "name" : "documentId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "400" : {
+            "description" : "Bad Request",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "413" : {
+            "description" : "Payload Too Large",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DocumentResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/doc-types" : {
+      "get" : {
+        "tags" : [ "documents-controller-impl" ],
+        "operationId" : "docTypes",
+        "responses" : {
+          "400" : {
+            "description" : "Bad Request",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "413" : {
+            "description" : "Payload Too Large",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ItemsDocType"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components" : {
+    "schemas" : {
+      "ProblemDetail" : {
+        "type" : "object",
+        "properties" : {
+          "type" : {
+            "type" : "string",
+            "format" : "uri"
+          },
+          "title" : {
+            "type" : [ "string", "null" ]
+          },
+          "status" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "detail" : {
+            "type" : [ "string", "null" ]
+          },
+          "instance" : {
+            "type" : [ "string", "null" ],
+            "format" : "uri"
+          },
+          "properties" : {
+            "type" : [ "object", "null" ],
+            "additionalProperties" : { }
+          }
+        }
+      },
+      "TypeRequest" : {
+        "type" : "object",
+        "properties" : {
+          "type" : {
+            "type" : "string",
+            "minLength" : 1
+          },
+          "reason" : {
+            "type" : "string",
+            "maxLength" : 500,
+            "minLength" : 0
+          }
+        },
+        "required" : [ "type" ]
+      },
+      "DocumentResult" : {
+        "type" : "object",
+        "properties" : {
+          "documentId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "fileId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "fileVersion" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "fromPage" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "toPage" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "stage" : {
+            "type" : "string"
+          },
+          "reasonCode" : {
+            "type" : "string"
+          },
+          "type" : {
+            "type" : "string"
+          },
+          "typeConfidence" : {
+            "type" : "number"
+          },
+          "evidence" : {
+            "type" : "string"
+          },
+          "source" : {
+            "type" : "string"
+          },
+          "resultVersion" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "fields" : {
+            "$ref" : "#/components/schemas/JsonNode"
+          },
+          "model" : {
+            "type" : "string"
+          },
+          "promptVersion" : {
+            "type" : "string"
+          },
+          "schemaVersion" : {
+            "type" : "string"
+          }
+        }
+      },
+      "ItemsDocumentResult" : {
+        "type" : "object",
+        "properties" : {
+          "items" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/DocumentResult"
+            }
+          }
+        }
+      },
+      "JsonNode" : { },
+      "PingRs" : {
+        "type" : "object",
+        "properties" : {
+          "service" : {
+            "type" : "string"
+          },
+          "userId" : {
+            "type" : "string"
+          },
+          "roles" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            },
+            "uniqueItems" : true
+          }
+        }
+      },
+      "LlmStatus" : {
+        "type" : "object",
+        "properties" : {
+          "provider" : {
+            "type" : "string"
+          },
+          "model" : {
+            "type" : "string"
+          },
+          "visionModel" : {
+            "type" : "string"
+          },
+          "reachable" : {
+            "type" : "boolean"
+          },
+          "checkedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "error" : {
+            "type" : "string"
+          }
+        }
+      },
+      "DocType" : {
+        "type" : "object",
+        "properties" : {
+          "code" : {
+            "type" : "string"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "hints" : {
+            "type" : "string"
+          },
+          "version" : {
+            "type" : "string"
+          },
+          "kinds" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "string"
+            }
+          },
+          "schema" : {
+            "$ref" : "#/components/schemas/JsonNode"
+          }
+        }
+      },
+      "ItemsDocType" : {
+        "type" : "object",
+        "properties" : {
+          "items" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/DocType"
+            }
+          }
+        }
+      }
+    }
+  }
+}

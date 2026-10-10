@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:subsidy:events:rules.package.v1:PackageChecked",
+  "title": "PackageChecked",
+  "description": "rules: новая версия протокола проверки. Это схема payload; конверт — envelope.schema.json.",
+  "type": "object",
+  "required": [
+    "packageId",
+    "protocolId",
+    "version",
+    "protocolStatus",
+    "completeness",
+    "failed",
+    "warnings",
+    "needsReview"
+  ],
+  "properties": {
+    "packageId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "protocolId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "protocolStatus": {
+      "enum": [
+        "COMPLETE",
+        "INCOMPLETE",
+        "NEEDS_REVIEW"
+      ]
+    },
+    "completeness": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "failed": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "warnings": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "needsReview": {
+      "type": "integer",
+      "minimum": 0
+    }
+  },
+  "additionalProperties": false
+}

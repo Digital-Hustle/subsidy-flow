@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:subsidy:events:package.file.v1:FileRemoved",
+  "title": "FileRemoved",
+  "description": "package: файл удалён из пакета (мягко). Это схема payload; конверт — envelope.schema.json.",
+  "type": "object",
+  "required": [
+    "fileId",
+    "packageId"
+  ],
+  "properties": {
+    "fileId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "packageId": {
+      "type": "string",
+      "format": "uuid"
+    }
+  },
+  "additionalProperties": false
+}

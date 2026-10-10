@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:subsidy:events:package.file.v1:FileReceived",
+  "title": "FileReceived",
+  "description": "package: файл принят в пакет. Это схема payload; конверт — envelope.schema.json.",
+  "type": "object",
+  "required": [
+    "fileId",
+    "packageId",
+    "version",
+    "mime",
+    "pages"
+  ],
+  "properties": {
+    "fileId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "packageId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "mime": {
+      "type": "string"
+    },
+    "pages": {
+      "type": [
+        "integer",
+        "null"
+      ]
+    }
+  },
+  "additionalProperties": false
+}

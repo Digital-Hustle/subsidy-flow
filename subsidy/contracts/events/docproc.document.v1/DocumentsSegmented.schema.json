@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:subsidy:events:docproc.document.v1:DocumentsSegmented",
+  "title": "DocumentsSegmented",
+  "description": "docproc: файл разбит на документы (сегменты страниц). Это схема payload; конверт — envelope.schema.json.",
+  "type": "object",
+  "required": [
+    "fileId",
+    "packageId",
+    "version",
+    "documents"
+  ],
+  "properties": {
+    "fileId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "packageId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "documents": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "documentId",
+          "fromPage",
+          "toPage"
+        ],
+        "properties": {
+          "documentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "fromPage": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "toPage": {
+            "type": "integer",
+            "minimum": 1
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

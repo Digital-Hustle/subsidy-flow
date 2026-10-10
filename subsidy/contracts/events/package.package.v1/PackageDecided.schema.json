@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:subsidy:events:package.package.v1:PackageDecided",
+  "title": "PackageDecided",
+  "description": "package: решение по пакету (FR-46). Это схема payload; конверт — envelope.schema.json.",
+  "type": "object",
+  "required": [
+    "packageId",
+    "orgId",
+    "inn",
+    "programCode",
+    "decision",
+    "decidedBy"
+  ],
+  "properties": {
+    "packageId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "orgId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "inn": {
+      "type": "string",
+      "pattern": "^(\\d{10}|\\d{12})$"
+    },
+    "programCode": {
+      "type": "string"
+    },
+    "decision": {
+      "enum": [
+        "APPROVE",
+        "REJECT",
+        "RETURN"
+      ]
+    },
+    "decidedBy": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": false
+}

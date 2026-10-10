@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:subsidy:events:package.package.v1:PackageCreated",
+  "title": "PackageCreated",
+  "description": "package: пакет создан (POST /packages). Это схема payload; конверт — envelope.schema.json.",
+  "type": "object",
+  "required": [
+    "packageId",
+    "orgId",
+    "inn",
+    "programCode",
+    "createdBy"
+  ],
+  "properties": {
+    "packageId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "orgId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "inn": {
+      "type": "string",
+      "pattern": "^(\\d{10}|\\d{12})$"
+    },
+    "programCode": {
+      "type": "string"
+    },
+    "createdBy": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": false
+}

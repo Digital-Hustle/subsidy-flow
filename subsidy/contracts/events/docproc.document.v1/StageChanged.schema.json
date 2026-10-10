@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:subsidy:events:docproc.document.v1:StageChanged",
+  "title": "StageChanged",
+  "description": "docproc: смена стадии файла. Это схема payload; конверт — envelope.schema.json.",
+  "type": "object",
+  "required": [
+    "fileId",
+    "packageId",
+    "version",
+    "stage"
+  ],
+  "properties": {
+    "fileId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "packageId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "stage": {
+      "enum": [
+        "QUEUED",
+        "EXTRACTING_TEXT",
+        "CLASSIFYING",
+        "EXTRACTING_FIELDS",
+        "VALIDATING",
+        "PARSED",
+        "NEEDS_REVIEW",
+        "UNREADABLE",
+        "WAITING_MODEL",
+        "FAILED",
+        "REMOVED"
+      ]
+    },
+    "reason": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "reasonCode": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  },
+  "additionalProperties": false
+}

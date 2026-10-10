@@ -1,0 +1,1262 @@
+{
+  "openapi" : "3.1.0",
+  "info" : {
+    "title" : "OpenAPI definition",
+    "version" : "v0"
+  },
+  "servers" : [ {
+    "url" : "http://localhost",
+    "description" : "Generated server url"
+  } ],
+  "paths" : {
+    "/api/v1/programs/{code}" : {
+      "get" : {
+        "tags" : [ "programs-controller-impl" ],
+        "operationId" : "program",
+        "parameters" : [ {
+          "name" : "code",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "400" : {
+            "description" : "Bad Request",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "413" : {
+            "description" : "Payload Too Large",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProgramRs"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put" : {
+        "tags" : [ "programs-controller-impl" ],
+        "operationId" : "update",
+        "parameters" : [ {
+          "name" : "code",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ProgramRq"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "400" : {
+            "description" : "Bad Request",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "413" : {
+            "description" : "Payload Too Large",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProgramRs"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/packages/{packageId}/fields" : {
+      "put" : {
+        "tags" : [ "protocol-controller-impl" ],
+        "operationId" : "editField",
+        "parameters" : [ {
+          "name" : "packageId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/FieldRq"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "400" : {
+            "description" : "Bad Request",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "413" : {
+            "description" : "Payload Too Large",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "202" : {
+            "description" : "Accepted",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AcceptedRs"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/packages/{packageId}/projection/rebuild" : {
+      "post" : {
+        "tags" : [ "protocol-controller-impl" ],
+        "operationId" : "rebuildProjection",
+        "parameters" : [ {
+          "name" : "packageId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "400" : {
+            "description" : "Bad Request",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "413" : {
+            "description" : "Payload Too Large",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "202" : {
+            "description" : "Accepted",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RebuildRs"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/internal/rules/packages/{packageId}/facts" : {
+      "get" : {
+        "tags" : [ "internal-facts-controller-impl" ],
+        "operationId" : "facts",
+        "parameters" : [ {
+          "name" : "packageId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "400" : {
+            "description" : "Bad Request",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "413" : {
+            "description" : "Payload Too Large",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/FactsRs"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/stats/errors" : {
+      "get" : {
+        "tags" : [ "insights-controller-impl" ],
+        "operationId" : "errors",
+        "parameters" : [ {
+          "name" : "from",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        }, {
+          "name" : "to",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        }, {
+          "name" : "program",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "400" : {
+            "description" : "Bad Request",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "413" : {
+            "description" : "Payload Too Large",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Stats"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/programs" : {
+      "get" : {
+        "tags" : [ "programs-controller-impl" ],
+        "operationId" : "programs",
+        "responses" : {
+          "400" : {
+            "description" : "Bad Request",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "413" : {
+            "description" : "Payload Too Large",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ItemsProgramRs"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/ping" : {
+      "get" : {
+        "tags" : [ "ping-controller-impl" ],
+        "operationId" : "ping",
+        "responses" : {
+          "400" : {
+            "description" : "Bad Request",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "413" : {
+            "description" : "Payload Too Large",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PingRs"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/packages/{packageId}/protocols" : {
+      "get" : {
+        "tags" : [ "protocol-controller-impl" ],
+        "operationId" : "versions",
+        "parameters" : [ {
+          "name" : "packageId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "400" : {
+            "description" : "Bad Request",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "413" : {
+            "description" : "Payload Too Large",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ItemsSummary"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/packages/{packageId}/protocols/{version}" : {
+      "get" : {
+        "tags" : [ "protocol-controller-impl" ],
+        "operationId" : "version",
+        "parameters" : [ {
+          "name" : "packageId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "version",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        } ],
+        "responses" : {
+          "400" : {
+            "description" : "Bad Request",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "413" : {
+            "description" : "Payload Too Large",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProtocolView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/packages/{packageId}/protocol" : {
+      "get" : {
+        "tags" : [ "protocol-controller-impl" ],
+        "operationId" : "protocol",
+        "parameters" : [ {
+          "name" : "packageId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "400" : {
+            "description" : "Bad Request",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "413" : {
+            "description" : "Payload Too Large",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProtocolView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/packages/{packageId}/protocol/export" : {
+      "get" : {
+        "tags" : [ "protocol-controller-impl" ],
+        "operationId" : "export",
+        "parameters" : [ {
+          "name" : "packageId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "format",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "default" : "pdf"
+          }
+        } ],
+        "responses" : {
+          "400" : {
+            "description" : "Bad Request",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "413" : {
+            "description" : "Payload Too Large",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "string",
+                  "format" : "byte"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organizations/{inn}/history" : {
+      "get" : {
+        "tags" : [ "insights-controller-impl" ],
+        "operationId" : "history",
+        "parameters" : [ {
+          "name" : "inn",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "400" : {
+            "description" : "Bad Request",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "413" : {
+            "description" : "Payload Too Large",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ItemsEntry"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/expiring" : {
+      "get" : {
+        "tags" : [ "insights-controller-impl" ],
+        "operationId" : "expiring",
+        "parameters" : [ {
+          "name" : "days",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        } ],
+        "responses" : {
+          "400" : {
+            "description" : "Bad Request",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "413" : {
+            "description" : "Payload Too Large",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ItemsExpiring"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components" : {
+    "schemas" : {
+      "ProblemDetail" : {
+        "type" : "object",
+        "properties" : {
+          "type" : {
+            "type" : "string",
+            "format" : "uri"
+          },
+          "title" : {
+            "type" : [ "string", "null" ]
+          },
+          "status" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "detail" : {
+            "type" : [ "string", "null" ]
+          },
+          "instance" : {
+            "type" : [ "string", "null" ],
+            "format" : "uri"
+          },
+          "properties" : {
+            "type" : [ "object", "null" ],
+            "additionalProperties" : { }
+          }
+        }
+      },
+      "JsonNode" : { },
+      "ProgramRq" : {
+        "type" : "object",
+        "properties" : {
+          "name" : {
+            "type" : "string",
+            "maxLength" : 300,
+            "minLength" : 0
+          },
+          "params" : {
+            "$ref" : "#/components/schemas/JsonNode"
+          },
+          "checklist" : {
+            "$ref" : "#/components/schemas/JsonNode"
+          }
+        },
+        "required" : [ "checklist", "params" ]
+      },
+      "ChecklistItem" : {
+        "type" : "object",
+        "properties" : {
+          "item" : {
+            "type" : "string"
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "kind" : {
+            "type" : "string"
+          },
+          "types" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "condition" : {
+            "type" : "string"
+          },
+          "conditionText" : {
+            "type" : "string"
+          },
+          "single" : {
+            "type" : "boolean"
+          }
+        }
+      },
+      "ProgramRs" : {
+        "type" : "object",
+        "properties" : {
+          "code" : {
+            "type" : "string"
+          },
+          "version" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "demo" : {
+            "type" : "boolean"
+          },
+          "params" : {
+            "$ref" : "#/components/schemas/JsonNode"
+          },
+          "checklist" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/ChecklistItem"
+            }
+          },
+          "updatedBy" : {
+            "type" : "string"
+          },
+          "updatedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
+      "FieldRq" : {
+        "type" : "object",
+        "properties" : {
+          "documentId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "field" : {
+            "type" : "string",
+            "maxLength" : 100,
+            "minLength" : 0
+          },
+          "value" : {
+            "type" : "string",
+            "maxLength" : 2000,
+            "minLength" : 0
+          },
+          "reason" : {
+            "type" : "string",
+            "maxLength" : 2000,
+            "minLength" : 0
+          }
+        },
+        "required" : [ "documentId", "field" ]
+      },
+      "AcceptedRs" : {
+        "type" : "object",
+        "properties" : {
+          "packageId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        }
+      },
+      "RebuildRs" : {
+        "type" : "object",
+        "properties" : {
+          "packageId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "documents" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "updated" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "removed" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        }
+      },
+      "DocFacts" : {
+        "type" : "object",
+        "properties" : {
+          "documentId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "fileId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "type" : {
+            "type" : "string"
+          },
+          "typeConfidence" : {
+            "type" : "number"
+          },
+          "stage" : {
+            "type" : "string"
+          },
+          "reasonCode" : {
+            "type" : "string"
+          },
+          "fromPage" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "toPage" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "fields" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "$ref" : "#/components/schemas/FieldFact"
+            }
+          }
+        }
+      },
+      "FactsRs" : {
+        "type" : "object",
+        "properties" : {
+          "facts" : {
+            "$ref" : "#/components/schemas/PackageFacts"
+          },
+          "protocol" : {
+            "$ref" : "#/components/schemas/ProtocolView"
+          }
+        }
+      },
+      "FieldFact" : {
+        "type" : "object",
+        "properties" : {
+          "name" : {
+            "type" : "string"
+          },
+          "value" : {
+            "$ref" : "#/components/schemas/JsonNode"
+          },
+          "confidence" : {
+            "type" : "number"
+          },
+          "source" : {
+            "type" : "string"
+          },
+          "flagged" : {
+            "type" : "boolean"
+          }
+        }
+      },
+      "FileFacts" : {
+        "type" : "object",
+        "properties" : {
+          "fileId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "version" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "stage" : {
+            "type" : "string"
+          },
+          "reasonCode" : {
+            "type" : "string"
+          }
+        }
+      },
+      "PackageFacts" : {
+        "type" : "object",
+        "properties" : {
+          "packageId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "inn" : {
+            "type" : "string"
+          },
+          "programCode" : {
+            "type" : "string"
+          },
+          "packageDate" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "documents" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/DocFacts"
+            }
+          },
+          "files" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/FileFacts"
+            }
+          }
+        }
+      },
+      "ProtocolView" : {
+        "type" : "object",
+        "properties" : {
+          "protocolId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "packageId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "version" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "status" : {
+            "type" : "string"
+          },
+          "programCode" : {
+            "type" : "string"
+          },
+          "programVersion" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "checklistVersion" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "rulesVersion" : {
+            "type" : "string"
+          },
+          "completeness" : {
+            "$ref" : "#/components/schemas/JsonNode"
+          },
+          "results" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/Result"
+            }
+          },
+          "failed" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "warnings" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "needsReview" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "createdAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
+      "Result" : {
+        "type" : "object",
+        "properties" : {
+          "rule" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "evidence" : {
+            "$ref" : "#/components/schemas/JsonNode"
+          },
+          "expected" : {
+            "type" : "string"
+          },
+          "actual" : {
+            "type" : "string"
+          }
+        }
+      },
+      "RuleStat" : {
+        "type" : "object",
+        "properties" : {
+          "rule" : {
+            "type" : "string"
+          },
+          "count" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "share" : {
+            "type" : "number"
+          }
+        }
+      },
+      "Stats" : {
+        "type" : "object",
+        "properties" : {
+          "items" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/RuleStat"
+            }
+          },
+          "packages" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "method" : {
+            "type" : "string"
+          }
+        }
+      },
+      "ItemsProgramRs" : {
+        "type" : "object",
+        "properties" : {
+          "items" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/ProgramRs"
+            }
+          }
+        }
+      },
+      "PingRs" : {
+        "type" : "object",
+        "properties" : {
+          "service" : {
+            "type" : "string"
+          },
+          "userId" : {
+            "type" : "string"
+          },
+          "roles" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            },
+            "uniqueItems" : true
+          }
+        }
+      },
+      "ItemsSummary" : {
+        "type" : "object",
+        "properties" : {
+          "items" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/Summary"
+            }
+          }
+        }
+      },
+      "Summary" : {
+        "type" : "object",
+        "properties" : {
+          "protocolId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "version" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "status" : {
+            "type" : "string"
+          },
+          "completeness" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "failed" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "warnings" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "needsReview" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "createdAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
+      "Entry" : {
+        "type" : "object",
+        "properties" : {
+          "at" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "by" : {
+            "type" : "string"
+          },
+          "action" : {
+            "type" : "string"
+          },
+          "packageId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "details" : {
+            "$ref" : "#/components/schemas/JsonNode"
+          }
+        }
+      },
+      "ItemsEntry" : {
+        "type" : "object",
+        "properties" : {
+          "items" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/Entry"
+            }
+          }
+        }
+      },
+      "Expiring" : {
+        "type" : "object",
+        "properties" : {
+          "packageId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "inn" : {
+            "type" : "string"
+          },
+          "documentId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "type" : {
+            "type" : "string"
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "date" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "expiresAt" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "daysLeft" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        }
+      },
+      "ItemsExpiring" : {
+        "type" : "object",
+        "properties" : {
+          "items" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/Expiring"
+            }
+          }
+        }
+      }
+    }
+  }
+}

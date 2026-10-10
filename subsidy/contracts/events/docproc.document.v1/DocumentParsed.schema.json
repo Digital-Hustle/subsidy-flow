@@ -1,0 +1,130 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:subsidy:events:docproc.document.v1:DocumentParsed",
+  "title": "DocumentParsed",
+  "description": "docproc: документ разобран (вид, поля, проверки); новая версия результата — новое событие. Это схема payload; конверт — envelope.schema.json.",
+  "type": "object",
+  "required": [
+    "fileId",
+    "packageId",
+    "version",
+    "documentId",
+    "fromPage",
+    "toPage",
+    "type",
+    "typeConfidence",
+    "source",
+    "stage",
+    "resultVersion",
+    "fields"
+  ],
+  "properties": {
+    "fileId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "packageId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "documentId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "fromPage": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "toPage": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "type": {
+      "type": "string"
+    },
+    "typeConfidence": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "source": {
+      "enum": [
+        "MODEL",
+        "SPECIALIST"
+      ]
+    },
+    "stage": {
+      "enum": [
+        "PARSED",
+        "NEEDS_REVIEW"
+      ]
+    },
+    "reason": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "reasonCode": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "resultVersion": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "fields": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "name",
+          "value",
+          "confidence",
+          "checks"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "value": {},
+          "confidence": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "checks": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "code",
+                "status",
+                "message"
+              ],
+              "properties": {
+                "code": {
+                  "type": "string"
+                },
+                "status": {
+                  "type": "string"
+                },
+                "message": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "additionalProperties": false
+}
